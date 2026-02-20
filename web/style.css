@@ -1,0 +1,334 @@
+:root {
+    --bg-main: #1e1e1e;
+    --bg-side: #252526;
+    --bg-tabs: #2d2d2d;
+    --accent: #007acc;
+    --text: #cccccc;
+    --border: #3c3c3c;
+}
+
+body {
+    background: var(--bg-main);
+    color: var(--text);
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Menús y Toolbar */
+.menu-bar {
+    background: #333333;
+    display: flex;
+    padding: 2px 10px;
+    font-size: 13px;
+}
+
+.dropdown {
+    position: relative;
+    margin-right: 15px;
+}
+
+.dropbtn {
+    background: none;
+    color: white;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background: var(--bg-side);
+    min-width: 160px;
+    z-index: 10;
+    border: 1px solid var(--border);
+}
+
+.dropdown-content a {
+    color: white;
+    padding: 10px;
+    text-decoration: none;
+    display: block;
+    font-size: 12px;
+}
+
+.dropdown-content a:hover {
+    background: var(--accent);
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.toolbar {
+    background: var(--bg-side);
+    padding: 5px 15px;
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid #111;
+}
+
+/* Estilo unificado para botones de la Toolbar */
+.toolbar button {
+    background: #333333;
+    border: 1px solid var(--border);
+    color: #a0a0a0;
+    /* Gris suave para iconos y texto */
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.toolbar button:hover {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(0, 122, 204, 0.4);
+}
+
+/* Estilo específico para los iconos SVG */
+.toolbar button svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    /* El icono cambia de color con el texto en el hover */
+    stroke: currentColor;
+    pointer-events: none;
+}
+
+/* Botón de ejecución (Play) con color distintivo */
+.toolbar .btn-run {
+    color: #4ec9b0;
+    /* Verde turquesa estilo VS Code */
+    font-weight: bold;
+}
+
+.toolbar .btn-run:hover {
+    background: #4ec9b0;
+    color: #1e1e1e !important;
+}
+
+.toolbar .separator {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+    margin: 0 5px;
+}
+
+/* Layout de Paneles (Visualización simultánea Req. 73) */
+.main-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 60% 40%;
+    flex: 1;
+    gap: 4px;
+    padding: 4px;
+    background: #000;
+    /* Color de las divisiones */
+}
+
+/* Sección del Editor (Req. 34) */
+.editor-pane {
+    background: var(--bg-main);
+    display: flex;
+    grid-row: 1;
+}
+
+/* Numeración de líneas (Req. 37) */
+.line-numbers {
+    width: 45px;
+    background: #2c2c2c;
+    color: #858585;
+    text-align: right;
+    padding: 10px 8px 10px 5px;
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    /* Debe coincidir con el editor */
+    user-select: none;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.line-numbers div {
+    height: 21px;
+    /* font-size 14 * line-height 1.5 */
+}
+
+#editor {
+    flex: 1;
+    background: transparent;
+    color: #9cdcfe;
+    border: none;
+    padding: 10px;
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+}
+
+/* Paneles de Resultados y Errores (Req. 33) */
+.results-pane,
+.bottom-pane {
+    background: var(--bg-side);
+    display: flex;
+    flex-direction: column;
+}
+
+.bottom-pane {
+    grid-column: 1 / span 2;
+}
+
+/* Estilo de Pestañas */
+.tabs {
+    background: var(--bg-tabs);
+    display: flex;
+    border-bottom: 1px solid var(--border);
+}
+
+.tab-link {
+    background: none;
+    border: none;
+    color: #969696; /* Color de texto inactivo */
+    padding: 8px 15px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease; /* Transición suave */
+    border-bottom: 2px solid transparent;
+}
+
+.tab-link:hover {
+    background: #3e3e3e;
+    color: #ffffff;
+}
+
+.tab-link.active {
+    background: var(--bg-side);
+    color: white;
+    border-bottom: 2px solid var(--accent);
+}
+
+/* Contenido de Paneles (Req. 40 - 63) */
+.tab-content,
+.tab-content-inf {
+    display: none;
+    padding: 15px;
+    font-family: 'Consolas', monospace;
+    overflow: auto;
+    flex: 1;
+    font-size: 13px;
+    white-space: pre-wrap;
+    /* Mantiene saltos de línea de la consola */
+}
+
+.tab-content.active,
+.tab-content-inf.active {
+    display: block;
+}
+
+/* Barra de estado (Posición del cursor Req. 38) */
+.status-bar {
+    background: var(--accent);
+    color: white;
+    padding: 2px 20px;
+    font-size: 12px;
+    text-align: right;
+}
+
+/* Overlay del Modal */
+.modal-overlay {
+    display: none;
+    /* Oculto por defecto */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Caja del Mensaje */
+.modal-box {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 12px;
+    width: 450px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    color: white;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.modal-icon {
+    color: #007acc;
+    font-size: 24px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.modal-body p {
+    color: #cccccc;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Botones del Modal */
+.btn-confirm,
+.btn-cancel {
+    padding: 8px 25px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.btn-confirm {
+    background: #004b7a;
+    color: white;
+}
+
+.btn-confirm:hover {
+    background: #007acc;
+}
+
+.btn-cancel {
+    background: transparent;
+    color: white;
+    border: 1px solid #444;
+}
+
+.btn-cancel:hover {
+    background: #333;
+}

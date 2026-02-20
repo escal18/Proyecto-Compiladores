@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Compilador</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="text/javascript" src="/eel.js"></script>
+</head>
+
+<body>
+    <nav class="menu-bar">
+        <div class="dropdown">
+            <button class="dropbtn">Archivo</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="nuevo()">Nuevo</a>
+                <a href="#" onclick="abrir()">Abrir</a>
+                <a href="#" onclick="cerrar()">Cerrar</a>
+                <a href="#" onclick="guardar()">Guardar</a>
+                <a href="#" onclick="guardarComo()">Guardar como</a>
+                <hr>
+                <a href="#" onclick="window.close()">Salir</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <button class="dropbtn">Compilar</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="compilar('lexico')">Análisis Léxico</a>
+                <a href="#" onclick="compilar('sintactico')">Análisis Sintáctico</a>
+                <a href="#" onclick="compilar('semantico')">Análisis Semántico</a>
+                <a href="#" onclick="compilar('intermedio')">Generación de Código Intermedio</a>
+                <a href="#" onclick="ejecutar()">Ejecución</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="toolbar">
+        <button onclick="nuevo()" title="Nuevo"><svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"
+                fill="#ffffff" stroke="#ffffff">
+                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                <g id="SVGRepo_iconCarrier">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M9.5 1.1l3.4 3.5.1.4v2h-1V6H8V2H3v11h4v1H2.5l-.5-.5v-12l.5-.5h6.7l.3.1zM9 2v3h2.9L9 2zm4 14h-1v-3H9v-1h3V9h1v3h3v1h-3v3z">
+                    </path>
+                </g>
+            </svg></button>
+        <button onclick="guardar()" title="Guardar"><svg viewBox="0 0 24 24" fill="none"
+                xmlns="http://www.w3.org/2000/svg">
+                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                <g id="SVGRepo_iconCarrier">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M18.1716 1C18.702 1 19.2107 1.21071 19.5858 1.58579L22.4142 4.41421C22.7893 4.78929 23 5.29799 23 5.82843V20C23 21.6569 21.6569 23 20 23H4C2.34315 23 1 21.6569 1 20V4C1 2.34315 2.34315 1 4 1H18.1716ZM4 3C3.44772 3 3 3.44772 3 4V20C3 20.5523 3.44772 21 4 21L5 21L5 15C5 13.3431 6.34315 12 8 12L16 12C17.6569 12 19 13.3431 19 15V21H20C20.5523 21 21 20.5523 21 20V6.82843C21 6.29799 20.7893 5.78929 20.4142 5.41421L18.5858 3.58579C18.2107 3.21071 17.702 3 17.1716 3H17V5C17 6.65685 15.6569 8 14 8H10C8.34315 8 7 6.65685 7 5V3H4ZM17 21V15C17 14.4477 16.5523 14 16 14L8 14C7.44772 14 7 14.4477 7 15L7 21L17 21ZM9 3H15V5C15 5.55228 14.5523 6 14 6H10C9.44772 6 9 5.55228 9 5V3Z"
+                        fill="#ffffff"></path>
+                </g>
+            </svg></button>
+        <div class="separator"></div>
+        <button onclick="compilar('lexico')">Lex</button>
+        <button onclick="compilar('sintactico')">Sin</button>
+        <button onclick="ejecutar()" class="btn-run">▶</button>
+    </div>
+
+    <main class="main-layout">
+        <section class="editor-pane">
+            <div class="line-numbers" id="line-numbers">1</div>
+            <textarea id="editor" spellcheck="false" oninput="actualizarEditor()"
+                onscroll="sincronizarScroll()"></textarea>
+        </section>
+
+        <section class="results-pane">
+            <div class="tabs">
+                <button class="tab-link active" onclick="verTab(event, 'tab-lexico')">Léxico</button>
+                <button class="tab-link" onclick="verTab(event, 'tab-sintactico')">Sintáctico</button>
+                <button class="tab-link" onclick="verTab(event, 'tab-semantico')">Semántico</button>
+                <button class="tab-link" onclick="verTab(event, 'tab-hash')">Hash Table</button>
+                <button class="tab-link" onclick="verTab(event, 'tab-intermedio')">Cód. Intermedio</button>
+            </div>
+            <div id="tab-lexico" class="tab-content active">Lista de tokens...</div>
+            <div id="tab-sintactico" class="tab-content">Árbol sintáctico...</div>
+            <div id="tab-semantico" class="tab-content">Validaciones semánticas...</div>
+            <div id="tab-hash" class="tab-content">Tabla de símbolos...</div>
+            <div id="tab-intermedio" class="tab-content">Código de 3 direcciones...</div>
+        </section>
+
+        <section class="bottom-pane">
+            <div class="tabs">
+                <button class="tab-link active" onclick="verTabInferior(event, 'err-lexico')">Err. Léxicos</button>
+                <button class="tab-link" onclick="verTabInferior(event, 'err-sintactico')">Err. Sintácticos</button>
+                <button class="tab-link" onclick="verTabInferior(event, 'err-semantico')">Err. Semánticos</button>
+                <button class="tab-link" onclick="verTabInferior(event, 'res-ejecucion')">Resultados</button>
+            </div>
+            <div id="err-lexico" class="tab-content-inf active">Lista de errores léxicos...</div>
+            <div id="err-sintactico" class="tab-content-inf">Lista de errores sintácticos...</div>
+            <div id="err-semantico" class="tab-content-inf">Lista de errores semánticos...</div>
+            <div id="res-ejecucion" class="tab-content-inf">Salida del programa compilado...</div>
+        </section>
+    </main>
+
+    <footer class="status-bar">
+        <span id="posicion-cursor">Línea: 1 | Columna: 0</span>
+    </footer>
+
+    <div id="custom-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span class="modal-icon">ⓘ</span>
+                <h3>Compiler</h3>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message">¿Crear nuevo archivo? Se perderán los cambios no guardados.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-accept" class="btn-confirm">Aceptar</button>
+                <button id="modal-cancel" class="btn-cancel">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
