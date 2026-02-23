@@ -5,16 +5,19 @@
     --accent: #007acc;
     --text: #cccccc;
     --border: #3c3c3c;
+    --line-number-bg: #2c2c2c;
 }
 
+/* Configuración Base */
 body {
     background: var(--bg-main);
     color: var(--text);
-    font-family: 'Segoe UI', sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 /* Menús y Toolbar */
@@ -23,6 +26,7 @@ body {
     display: flex;
     padding: 2px 10px;
     font-size: 13px;
+    z-index: 1001;
 }
 
 .dropdown {
@@ -43,8 +47,9 @@ body {
     position: absolute;
     background: var(--bg-side);
     min-width: 160px;
-    z-index: 10;
+    z-index: 1002;
     border: 1px solid var(--border);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
 .dropdown-content a {
@@ -63,58 +68,53 @@ body {
     display: block;
 }
 
+/* Toolbar y Arreglo de SVGs */
 .toolbar {
     background: var(--bg-side);
     padding: 5px 15px;
     display: flex;
     gap: 8px;
     border-bottom: 1px solid #111;
+    align-items: center;
 }
 
-/* Estilo unificado para botones de la Toolbar */
 .toolbar button {
     background: #333333;
     border: 1px solid var(--border);
-    color: #a0a0a0;
-    /* Gris suave para iconos y texto */
+    color: #ffffff;
     padding: 6px 14px;
     cursor: pointer;
     border-radius: 4px;
     font-size: 14px;
-    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 5px;
+    transition: all 0.2s ease;
+}
+
+/* Corrección de visibilidad para los iconos SVG */
+.toolbar button svg {
+    width: 18px;
+    height: 18px;
+    fill: #ffffff; /* Fuerza el color blanco */
+    display: inline-block;
+    vertical-align: middle;
+    pointer-events: none;
 }
 
 .toolbar button:hover {
     background: var(--accent);
     color: #ffffff;
-    border-color: var(--accent);
-    box-shadow: 0 0 8px rgba(0, 122, 204, 0.4);
 }
 
-/* Estilo específico para los iconos SVG */
-.toolbar button svg {
-    width: 18px;
-    height: 18px;
-    fill: currentColor;
-    /* El icono cambia de color con el texto en el hover */
-    stroke: currentColor;
-    pointer-events: none;
+.toolbar button:hover svg {
+    fill: #ffffff;
 }
 
-/* Botón de ejecución (Play) con color distintivo */
 .toolbar .btn-run {
     color: #4ec9b0;
-    /* Verde turquesa estilo VS Code */
     font-weight: bold;
-}
-
-.toolbar .btn-run:hover {
-    background: #4ec9b0;
-    color: #1e1e1e !important;
 }
 
 .toolbar .separator {
@@ -124,44 +124,84 @@ body {
     margin: 0 5px;
 }
 
-/* Layout de Paneles (Visualización simultánea Req. 73) */
+/* LAYOUT PRINCIPAL (Vertical) */
 .main-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 60% 40%;
+    display: flex;
+    flex-direction: column;
     flex: 1;
     gap: 4px;
     padding: 4px;
     background: #000;
-    /* Color de las divisiones */
-}
-
-/* Sección del Editor (Req. 34) */
-.editor-pane {
-    background: var(--bg-main);
-    display: flex;
-    grid-row: 1;
-}
-
-/* Numeración de líneas (Req. 37) */
-.line-numbers {
-    width: 45px;
-    background: #2c2c2c;
-    color: #858585;
-    text-align: right;
-    padding: 10px 8px 10px 5px;
-    font-family: 'Consolas', monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    /* Debe coincidir con el editor */
-    user-select: none;
-    border-right: 1px solid var(--border);
+    height: calc(100vh - 110px);
     overflow: hidden;
 }
 
-.line-numbers div {
-    height: 21px;
-    /* font-size 14 * line-height 1.5 */
+/* CONTENEDOR SUPERIOR (Horizontal con Resizer) */
+.top-container {
+    display: flex;
+    flex-direction: row;
+    height: 65%; /* Altura inicial */
+    min-height: 100px;
+    width: 100%;
+}
+
+/* SECCIÓN DEL EDITOR */
+.editor-pane {
+    display: flex;
+    flex: 0 0 55%; /* Ancho inicial del editor */
+    min-width: 150px;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    position: relative;
+}
+
+/* DIVISOR (SPLITTER) */
+.resizer {
+    width: 6px;
+    cursor: col-resize;
+    background-color: #333;
+    z-index: 10;
+    transition: background 0.2s;
+}
+
+.resizer:hover {
+    background-color: var(--accent);
+}
+
+/* PANEL DE RESULTADOS (DERECHA) */
+.results-pane {
+    flex: 1;
+    min-width: 150px;
+    background: var(--bg-side);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+/* PANEL INFERIOR (ERRORES) */
+.bottom-pane {
+    height: 35%;
+    min-height: 80px;
+    background: var(--bg-side);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+}
+
+/* EDITOR Y LÍNEAS */
+.line-numbers {
+    width: 50px;
+    background-color: var(--line-number-bg);
+    color: #858585;
+    text-align: right;
+    padding: 10px 8px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
 }
 
 #editor {
@@ -170,26 +210,17 @@ body {
     color: #9cdcfe;
     border: none;
     padding: 10px;
-    font-family: 'Consolas', monospace;
+    font-family: 'Consolas', 'Courier New', monospace;
     font-size: 14px;
     line-height: 1.5;
     resize: none;
     outline: none;
+    white-space: pre;
+    overflow: auto;
+    tab-size: 4;
 }
 
-/* Paneles de Resultados y Errores (Req. 33) */
-.results-pane,
-.bottom-pane {
-    background: var(--bg-side);
-    display: flex;
-    flex-direction: column;
-}
-
-.bottom-pane {
-    grid-column: 1 / span 2;
-}
-
-/* Estilo de Pestañas */
+/* PESTAÑAS Y CONTENIDO */
 .tabs {
     background: var(--bg-tabs);
     display: flex;
@@ -199,17 +230,10 @@ body {
 .tab-link {
     background: none;
     border: none;
-    color: #969696; /* Color de texto inactivo */
+    color: #969696;
     padding: 8px 15px;
     cursor: pointer;
     font-size: 12px;
-    transition: all 0.2s ease; /* Transición suave */
-    border-bottom: 2px solid transparent;
-}
-
-.tab-link:hover {
-    background: #3e3e3e;
-    color: #ffffff;
 }
 
 .tab-link.active {
@@ -218,120 +242,83 @@ body {
     border-bottom: 2px solid var(--accent);
 }
 
-/* Contenido de Paneles (Req. 40 - 63) */
-.tab-content,
-.tab-content-inf {
+.tab-content, .tab-content-inf {
     display: none;
-    padding: 15px;
+    padding: 12px;
     font-family: 'Consolas', monospace;
     overflow: auto;
     flex: 1;
     font-size: 13px;
     white-space: pre-wrap;
-    /* Mantiene saltos de línea de la consola */
+    color: #d4d4d4;
 }
 
-.tab-content.active,
-.tab-content-inf.active {
+.tab-content.active, .tab-content-inf.active {
     display: block;
 }
 
-/* Barra de estado (Posición del cursor Req. 38) */
+/* BARRA DE ESTADO FIJA */
 .status-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 25px;
     background: var(--accent);
     color: white;
-    padding: 2px 20px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding-right: 20px;
+    z-index: 2000;
     font-size: 12px;
-    text-align: right;
 }
 
-/* Overlay del Modal */
+/* MODAL PERSONALIZADO */
 .modal-overlay {
     display: none;
-    /* Oculto por defecto */
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 1000;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 5000;
     justify-content: center;
     align-items: center;
 }
 
-/* Caja del Mensaje */
 .modal-box {
     background: #1e1e1e;
     border: 1px solid #333;
     border-radius: 12px;
-    width: 450px;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    width: 400px;
+    padding: 25px;
     color: white;
-    font-family: 'Segoe UI', sans-serif;
-}
-
-.modal-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.modal-icon {
-    color: #007acc;
-    font-size: 24px;
-}
-
-.modal-header h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 500;
-}
-
-.modal-body p {
-    color: #cccccc;
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-.modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-/* Botones del Modal */
-.btn-confirm,
-.btn-cancel {
-    padding: 8px 25px;
-    border-radius: 20px;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    transition: 0.2s;
 }
 
 .btn-confirm {
     background: #004b7a;
     color: white;
+    border-radius: 20px;
+    padding: 8px 25px;
+    cursor: pointer;
+    border: none;
 }
 
 .btn-confirm:hover {
-    background: #007acc;
+    background: var(--accent);
 }
 
-.btn-cancel { 
-    background: transparent; 
-    color: white; 
-    border: 1px solid #007acc; /* Borde azul como el de la imagen */
-    padding: 8px 25px;
+.btn-cancel {
+    background: transparent;
+    color: white;
+    border: 1px solid var(--accent);
     border-radius: 20px;
+    padding: 8px 25px;
     cursor: pointer;
 }
 
 .btn-cancel:hover {
-    background: rgba(0, 122, 204, 0.1); /* Un ligero brillo azul al pasar el mouse */
+    background: rgba(0, 122, 204, 0.1);
 }

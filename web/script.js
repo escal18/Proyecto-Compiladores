@@ -1,29 +1,6 @@
 let rutaActual = null;
 
-// --- GESTIÓN DE MODAL PERSONALIZADO ---
-function mostrarConfirmacion(mensaje) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('custom-modal');
-        const btnAccept = document.getElementById('modal-accept');
-        const btnCancel = document.getElementById('modal-cancel');
-        const msgElement = document.getElementById('modal-message');
-
-        msgElement.innerText = mensaje;
-        modal.style.display = 'flex';
-
-        btnAccept.onclick = () => {
-            modal.style.display = 'none';
-            resolve(true);
-        };
-
-        btnCancel.onclick = () => {
-            modal.style.display = 'none';
-            resolve(false);
-        };
-    });
-}
-
-// --- FUNCIONES DE ARCHIVO (Req. 2.1) ---
+// --- FUNCIONES DE ARCHIVO ---
 async function nuevo() {
     const confirmar = await mostrarConfirmacion("¿Crear nuevo archivo? Se perderán los cambios no guardados.");
     if (confirmar) {
@@ -71,38 +48,85 @@ async function cerrar() {
     }
 }
 
+// --- FUNCIÓN SALIR CORREGIDA ---
 async function salir() {
-    const confirmar = await mostrarConfirmacion("¿Está seguro de que desea salir?");
+    const confirmar = await mostrarConfirmacion("¿Está seguro de que desea salir del IDE?");
+    
     if (confirmar) {
-        eel.finalizar_programa()(); // Envía la orden a Python
-        window.close();             // Cierra la ventana del navegador
+        console.log("Cerrando sistema...");
+        // 1. Llamamos a la función de Python (sin await para que no espere respuesta)
+        eel.finalizar_programa()();
+        
+        // 2. Cerramos la ventana visualmente después de un milisegundo
+        // Esto ayuda si el navegador está bloqueando el cierre del proceso
+        setTimeout(() => {
+            window.close();
+        }, 100);
     }
 }
 
-// --- LÓGICA DEL EDITOR (Req. 3.37, 3.38) ---
+function mostrarConfirmacion(mensaje) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-modal');
+        const btnAccept = document.getElementById('modal-accept');
+        const btnCancel = document.getElementById('modal-cancel');
+        const msgElement = document.getElementById('modal-message');
+
+        msgElement.innerText = mensaje;
+        modal.style.display = 'flex';
+
+        // Limpiamos eventos previos para que no se acumulen
+        btnAccept.onclick = null;
+        btnCancel.onclick = null;
+
+        btnAccept.onclick = () => {
+            modal.style.display = 'none';
+            resolve(true);
+        };
+
+        btnCancel.onclick = () => {
+            modal.style.display = 'none';
+            resolve(false);
+        };
+    });
+}
+
+// --- LÓGICA DEL EDITOR ---
 function actualizarEditor() {
     const editor = document.getElementById('editor');
     const lineNumbers = document.getElementById('line-numbers');
     const statusBar = document.getElementById('posicion-cursor');
 
-    // Numeración de líneas
-    const lineas = editor.value.split('\n').length;
+    // 1. Obtener el texto actual
+    const texto = editor.value;
+
+    // 2. Sincronizar numeración de líneas
+    // Usamos una expresión regular para contar todas las líneas, incluso si están vacías
+    const totalLineas = texto.split(/\r?\n/).length;
     let numerosHtml = "";
-    for (let i = 1; i <= lineas; i++) {
+    for (let i = 1; i <= totalLineas; i++) {
         numerosHtml += `<div>${i}</div>`;
     }
     lineNumbers.innerHTML = numerosHtml;
 
-    // Posición del Cursor
-    const pos = editor.selectionStart;
-    const textoHastaCursor = editor.value.substring(0, pos);
-    const lineasArray = textoHastaCursor.split('\n');
-    const fila = lineasArray.length;
-    const columna = lineasArray[lineasArray.length - 1].length;
-
-    const nombreArchivo = rutaActual ? rutaActual.split(/[\\/]/).pop() : 'Sin título';
-    statusBar.innerText = `Archivo: ${nombreArchivo} | Línea: ${fila} | Columna: ${columna}`;
+    // 3. Calcular Fila y Columna exactas
+    const posicionCursor = editor.selectionStart;
     
+    // Cortamos el texto hasta donde está el cursor
+    const textoHastaCursor = texto.substring(0, posicionCursor);
+    
+    // Las líneas son el número de saltos de línea encontrados + 1
+    const lineasSub = textoHastaCursor.split(/\r?\n/);
+    const filaActual = lineasSub.length;
+    
+    // La columna es el largo de la última línea en el array (donde está el cursor)
+    const columnaActual = lineasSub[filaActual - 1].length;
+
+    // 4. Actualizar Barra de Estado
+    const nombreArchivo = rutaActual ? rutaActual.split(/[\\/]/).pop() : 'Sin título';
+    statusBar.innerText = `Archivo: ${nombreArchivo} | Línea: ${filaActual} | Columna: ${columnaActual}`;
+    
+    // 5. Sincronizar el scroll de los números
     sincronizarScroll();
 }
 
@@ -112,7 +136,7 @@ function sincronizarScroll() {
     lineNumbers.scrollTop = editor.scrollTop;
 }
 
-// --- COMPILACIÓN (Req. 2.2) ---
+// --- COMPILACIÓN ---
 async function compilar(fase) {
     const codigo = document.getElementById('editor').value;
     const tabLex = document.getElementById('tab-lexico');
@@ -131,7 +155,6 @@ async function compilar(fase) {
     }
 }
 
-// Manejo de Pestañas
 function verTab(evt, tabName) {
     let contents = document.getElementsByClassName("tab-content");
     for (let c of contents) c.classList.remove("active");
@@ -158,3 +181,35 @@ window.onload = () => {
     editor.addEventListener('scroll', sincronizarScroll);
     actualizarEditor();
 };
+
+document.addEventListener('DOMContentLoaded', function () {
+    const resizer = document.getElementById('dragMe');
+    const leftSide = document.getElementById('left-panel'); // Asegúrate de que coincida con el ID del HTML
+
+    let x = 0;
+    let leftWidth = 0;
+
+    const mouseDownHandler = function (e) {
+        x = e.clientX;
+        leftWidth = leftSide.getBoundingClientRect().width;
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
+    };
+
+    const mouseMoveHandler = function (e) {
+        const dx = e.clientX - x;
+        const containerWidth = resizer.parentNode.getBoundingClientRect().width;
+        const newLeftWidth = ((leftWidth + dx) * 100) / containerWidth;
+        
+        // Aplicamos el nuevo ancho en porcentaje
+        leftSide.style.flex = `0 0 ${newLeftWidth}%`;
+        actualizarEditor();
+    };
+
+    const mouseUpHandler = function () {
+        document.removeEventListener('mousemove', mouseMoveHandler);
+        document.removeEventListener('mouseup', mouseUpHandler);
+    };
+
+    resizer.addEventListener('mousedown', mouseDownHandler);
+});

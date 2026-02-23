@@ -19,7 +19,7 @@
                 <a href="#" onclick="guardar()">Guardar</a>
                 <a href="#" onclick="guardarComo()">Guardar como</a>
                 <hr>
-                <a href="#" onclick="salir()">Salir</a>
+                <a style="cursor: pointer;" onclick="salir()">Salir</a>
             </div>
         </div>
         <div class="dropdown">
@@ -64,26 +64,30 @@
     </div>
 
     <main class="main-layout">
-        <section class="editor-pane">
-            <div class="line-numbers" id="line-numbers">1</div>
-            <textarea id="editor" spellcheck="false" oninput="actualizarEditor()"
-                onscroll="sincronizarScroll()"></textarea>
-        </section>
+        <div class="top-container">
+            <section class="editor-pane" id="left-panel">
+                <div class="line-numbers" id="line-numbers">1</div>
+                <textarea id="editor" spellcheck="false" oninput="actualizarEditor()"
+                    onscroll="sincronizarScroll()"></textarea>
+            </section>
 
-        <section class="results-pane">
-            <div class="tabs">
-                <button class="tab-link active" onclick="verTab(event, 'tab-lexico')">Léxico</button>
-                <button class="tab-link" onclick="verTab(event, 'tab-sintactico')">Sintáctico</button>
-                <button class="tab-link" onclick="verTab(event, 'tab-semantico')">Semántico</button>
-                <button class="tab-link" onclick="verTab(event, 'tab-hash')">Hash Table</button>
-                <button class="tab-link" onclick="verTab(event, 'tab-intermedio')">Cód. Intermedio</button>
-            </div>
-            <div id="tab-lexico" class="tab-content active">Lista de tokens...</div>
-            <div id="tab-sintactico" class="tab-content">Árbol sintáctico...</div>
-            <div id="tab-semantico" class="tab-content">Validaciones semánticas...</div>
-            <div id="tab-hash" class="tab-content">Tabla de símbolos...</div>
-            <div id="tab-intermedio" class="tab-content">Código de 3 direcciones...</div>
-        </section>
+            <div class="resizer" id="dragMe"></div>
+
+            <section class="results-pane" id="right-panel">
+                <div class="tabs">
+                    <button class="tab-link active" onclick="verTab(event, 'tab-lexico')">Léxico</button>
+                    <button class="tab-link" onclick="verTab(event, 'tab-sintactico')">Sintáctico</button>
+                    <button class="tab-link" onclick="verTab(event, 'tab-semantico')">Semántico</button>
+                    <button class="tab-link" onclick="verTab(event, 'tab-hash')">Hash Table</button>
+                    <button class="tab-link" onclick="verTab(event, 'tab-intermedio')">Cód. Intermedio</button>
+                </div>
+                <div id="tab-lexico" class="tab-content active">Lista de tokens...</div>
+                <div id="tab-sintactico" class="tab-content">Árbol sintáctico...</div>
+                <div id="tab-semantico" class="tab-content">Validaciones semánticas...</div>
+                <div id="tab-hash" class="tab-content">Tabla de símbolos...</div>
+                <div id="tab-intermedio" class="tab-content">Código de 3 direcciones...</div>
+            </section>
+        </div>
 
         <section class="bottom-pane">
             <div class="tabs">
