@@ -323,12 +323,15 @@ body {
     background: #007acc;
 }
 
-.btn-cancel {
-    background: transparent;
-    color: white;
-    border: 1px solid #444;
+.btn-cancel { 
+    background: transparent; 
+    color: white; 
+    border: 1px solid #007acc; /* Borde azul como el de la imagen */
+    padding: 8px 25px;
+    border-radius: 20px;
+    cursor: pointer;
 }
 
 .btn-cancel:hover {
-    background: #333;
+    background: rgba(0, 122, 204, 0.1); /* Un ligero brillo azul al pasar el mouse */
 }
