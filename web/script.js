@@ -1,6 +1,5 @@
 let rutaActual = null;
 
-// --- FUNCIONES DE ARCHIVO ---
 async function nuevo() {
     const confirmar = await mostrarConfirmacion("¿Crear nuevo archivo? Se perderán los cambios no guardados.");
     if (confirmar) {
@@ -48,17 +47,11 @@ async function cerrar() {
     }
 }
 
-// --- FUNCIÓN SALIR CORREGIDA ---
 async function salir() {
     const confirmar = await mostrarConfirmacion("¿Está seguro de que desea salir del IDE?");
-    
     if (confirmar) {
         console.log("Cerrando sistema...");
-        // 1. Llamamos a la función de Python (sin await para que no espere respuesta)
         eel.finalizar_programa()();
-        
-        // 2. Cerramos la ventana visualmente después de un milisegundo
-        // Esto ayuda si el navegador está bloqueando el cierre del proceso
         setTimeout(() => {
             window.close();
         }, 100);
@@ -75,7 +68,6 @@ function mostrarConfirmacion(mensaje) {
         msgElement.innerText = mensaje;
         modal.style.display = 'flex';
 
-        // Limpiamos eventos previos para que no se acumulen
         btnAccept.onclick = null;
         btnCancel.onclick = null;
 
@@ -91,17 +83,13 @@ function mostrarConfirmacion(mensaje) {
     });
 }
 
-// --- LÓGICA DEL EDITOR ---
 function actualizarEditor() {
     const editor = document.getElementById('editor');
     const lineNumbers = document.getElementById('line-numbers');
     const statusBar = document.getElementById('posicion-cursor');
 
-    // 1. Obtener el texto actual
     const texto = editor.value;
 
-    // 2. Sincronizar numeración de líneas
-    // Usamos una expresión regular para contar todas las líneas, incluso si están vacías
     const totalLineas = texto.split(/\r?\n/).length;
     let numerosHtml = "";
     for (let i = 1; i <= totalLineas; i++) {
@@ -109,24 +97,15 @@ function actualizarEditor() {
     }
     lineNumbers.innerHTML = numerosHtml;
 
-    // 3. Calcular Fila y Columna exactas
     const posicionCursor = editor.selectionStart;
-    
-    // Cortamos el texto hasta donde está el cursor
     const textoHastaCursor = texto.substring(0, posicionCursor);
-    
-    // Las líneas son el número de saltos de línea encontrados + 1
     const lineasSub = textoHastaCursor.split(/\r?\n/);
     const filaActual = lineasSub.length;
-    
-    // La columna es el largo de la última línea en el array (donde está el cursor)
     const columnaActual = lineasSub[filaActual - 1].length;
 
-    // 4. Actualizar Barra de Estado
     const nombreArchivo = rutaActual ? rutaActual.split(/[\\/]/).pop() : 'Sin título';
     statusBar.innerText = `Archivo: ${nombreArchivo} | Línea: ${filaActual} | Columna: ${columnaActual}`;
     
-    // 5. Sincronizar el scroll de los números
     sincronizarScroll();
 }
 
@@ -136,23 +115,73 @@ function sincronizarScroll() {
     lineNumbers.scrollTop = editor.scrollTop;
 }
 
-// --- COMPILACIÓN ---
 async function compilar(fase) {
     const codigo = document.getElementById('editor').value;
-    const tabLex = document.getElementById('tab-lexico');
-    const consoleArea = document.getElementById('err-lexico');
+    const res = await eel.ejecutar_fase_compilador(fase, codigo)();
 
-    tabLex.innerText = "Compilando fase: " + fase + "...";
-    let respuesta = await eel.ejecutar_fase_compilador(fase, codigo)();
+    const tabMap = {
+        'lexico': 'tab-lexico',
+        'sintactico': 'tab-sintactico',
+        'semantico': 'tab-semantico',
+        'intermedio': 'tab-intermedio'
+    };
+    document.getElementById(tabMap[fase]).innerText = res.resultado;
+
+    const errorTabMap = {
+        'lexico': 'err-lexico',
+        'sintactico': 'err-sintactico',
+        'semantico': 'err-semantico',
+        'intermedio': 'err-intermedio'
+    };
     
-    tabLex.innerText = respuesta.resultado || "Sin salida.";
-    if (respuesta.errores) {
-        consoleArea.innerText = respuesta.errores;
-        consoleArea.style.color = "#f44336";
+    const errorArea = document.getElementById(errorTabMap[fase]);
+    
+    if (res.errores.length > 0) {
+        errorArea.innerText = res.errores.map(e => `Línea ${e.linea}: ${e.desc}`).join('\n');
+        errorArea.style.color = "#f44336";
     } else {
-        consoleArea.innerText = "Análisis finalizado sin errores.";
-        consoleArea.style.color = "#4ec9b0";
+        errorArea.innerText = "0 errores detectados.";
+        errorArea.style.color = "#4ec9b0";
     }
+
+    if (res.tabla_simbolos && res.tabla_simbolos.length > 0) {
+        let html = `<table style="width:100%; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid var(--border)">
+                    <th>ID</th><th>Tipo</th><th>Línea</th>
+                </tr>`;
+        res.tabla_simbolos.forEach(s => {
+            html += `<tr><td>${s.id}</td><td>${s.tipo}</td><td>${s.linea}</td></tr>`;
+        });
+        html += "</table>";
+        document.getElementById('tab-hash').innerHTML = html;
+    }
+
+    verTab({ currentTarget: document.querySelector(`[onclick*="${fase}"]`) }, tabMap[fase]);
+
+    if (res.errores.length > 0) {
+        verTabInferior({ currentTarget: document.querySelector(`[onclick*="${errorTabMap[fase]}"]`) }, errorTabMap[fase]);
+    }
+}
+
+async function ejecutar() {
+    const codigo = document.getElementById('editor').value;
+    const resPane = document.getElementById('res-ejecucion');
+    
+    resPane.innerText = "Iniciando ejecución...";
+    verTabInferior(null, 'res-ejecucion');
+
+    let respuesta = await eel.ejecutar_fase_compilador('ejecucion', codigo)();
+    
+    resPane.innerText = respuesta.resultado || respuesta.errores || "Programa finalizado.";
+}
+
+function actualizarTablaSimbolos(simbolos) {
+    let html = "<table class='symbol-table'><tr><th>ID</th><th>Tipo</th><th>Línea</th></tr>";
+    simbolos.forEach(s => {
+        html += `<tr><td>${s.id}</td><td>${s.tipo}</td><td>${s.linea}</td></tr>`;
+    });
+    html += "</table>";
+    document.getElementById('tab-hash').innerHTML = html;
 }
 
 function verTab(evt, tabName) {
@@ -184,7 +213,7 @@ window.onload = () => {
 
 document.addEventListener('DOMContentLoaded', function () {
     const resizer = document.getElementById('dragMe');
-    const leftSide = document.getElementById('left-panel'); // Asegúrate de que coincida con el ID del HTML
+    const leftSide = document.getElementById('left-panel');
 
     let x = 0;
     let leftWidth = 0;
@@ -200,8 +229,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const dx = e.clientX - x;
         const containerWidth = resizer.parentNode.getBoundingClientRect().width;
         const newLeftWidth = ((leftWidth + dx) * 100) / containerWidth;
-        
-        // Aplicamos el nuevo ancho en porcentaje
         leftSide.style.flex = `0 0 ${newLeftWidth}%`;
         actualizarEditor();
     };
