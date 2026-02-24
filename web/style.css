@@ -1,11 +1,14 @@
 :root {
-    --bg-main: #1e1e1e;
-    --bg-side: #252526;
-    --bg-tabs: #2d2d2d;
-    --accent: #007acc;
-    --text: #cccccc;
-    --border: #3c3c3c;
-    --line-number-bg: #2c2c2c;
+    --bg-main: #0b0e14;
+    --bg-side: #11141d;
+    --bg-tabs: #1a1f29;
+    --accent: #7b61ff;
+    --accent-hover: #9381ff;
+    --text: #d1d5db;
+    --border: #242936;
+    --line-number-bg: #0f121a;
+    --color-run: #00ff9d;
+    --color-editor-text: #e0e7ff;
 }
 
 body {
@@ -19,12 +22,14 @@ body {
     overflow: hidden;
 }
 
+/* Menús y Toolbar */
 .menu-bar {
-    background: #333333;
+    background: #161b22;
     display: flex;
     padding: 2px 10px;
     font-size: 13px;
     z-index: 1001;
+    border-bottom: 1px solid var(--border);
 }
 
 .dropdown {
@@ -47,11 +52,11 @@ body {
     min-width: 160px;
     z-index: 1002;
     border: 1px solid var(--border);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
 }
 
 .dropdown-content a {
-    color: white;
+    color: var(--text);
     padding: 10px;
     text-decoration: none;
     display: block;
@@ -60,6 +65,7 @@ body {
 
 .dropdown-content a:hover {
     background: var(--accent);
+    color: white;
 }
 
 .dropdown:hover .dropdown-content {
@@ -68,26 +74,24 @@ body {
 
 .toolbar {
     background: var(--bg-side);
-    padding: 5px 15px;
+    padding: 8px 15px;
     display: flex;
-    gap: 8px;
-    border-bottom: 1px solid #111;
+    gap: 10px;
+    border-bottom: 1px solid #000;
     align-items: center;
 }
 
 .toolbar button {
-    background: #333333;
+    background: #1f2430;
     border: 1px solid var(--border);
     color: #ffffff;
     padding: 6px 14px;
     cursor: pointer;
     border-radius: 4px;
-    font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    transition: all 0.2s ease;
+    gap: 6px;
 }
 
 .toolbar button svg {
@@ -95,31 +99,40 @@ body {
     height: 18px;
     fill: #ffffff;
     display: inline-block;
-    vertical-align: middle;
     pointer-events: none;
 }
 
 .toolbar button:hover {
     background: var(--accent);
-    color: #ffffff;
-}
-
-.toolbar button:hover svg {
-    fill: #ffffff;
+    box-shadow: 0 0 12px rgba(123, 97, 255, 0.4);
 }
 
 .toolbar .btn-run {
-    color: #4ec9b0;
-    font-weight: bold;
+    color: var(--color-run);
+    border-color: rgba(0, 255, 157, 0.2);
+}
+
+.toolbar .btn-run:hover {
+    background: var(--color-run) !important;
+    color: #000 !important;
+}
+
+.toolbar .btn-run svg {
+    fill: var(--color-run);
+}
+
+.toolbar .btn-run:hover svg {
+    fill: #000;
 }
 
 .toolbar .separator {
     width: 1px;
-    height: 24px;
+    height: 20px;
     background: var(--border);
     margin: 0 5px;
 }
 
+/* Layout y Splitter */
 .main-layout {
     display: flex;
     flex-direction: column;
@@ -139,28 +152,121 @@ body {
     width: 100%;
 }
 
-.editor-pane {
-    display: flex;
-    flex: 0 0 55%;
-    min-width: 150px;
-    background: var(--bg-main);
-    border: 1px solid var(--border);
-    overflow: hidden;
-    position: relative;
-}
-
 .resizer {
     width: 6px;
     cursor: col-resize;
-    background-color: #333;
+    background-color: #1a1f29;
     z-index: 10;
-    transition: background 0.2s;
+    transition: background 0.3s;
 }
 
 .resizer:hover {
     background-color: var(--accent);
 }
 
+/* Pestaña de Archivo Abierto */
+.file-tabs-header {
+    display: flex;
+    background: #080a0f;
+    height: 35px;
+    border-bottom: 1px solid var(--border);
+}
+
+.file-tab {
+    display: flex;
+    align-items: center;
+    background: var(--bg-tabs);
+    color: #9ca3af;
+    padding: 0 12px;
+    height: 100%;
+    min-width: 120px;
+    font-size: 12px;
+    border-right: 1px solid var(--border);
+    cursor: default;
+}
+
+.file-tab.active {
+    background: var(--bg-main);
+    color: white;
+    border-top: 2px solid var(--accent);
+}
+
+/* Tamaño y color para el icono de la pestaña */
+.file-tab .file-icon svg {
+    width: 14px;      /* Tamaño adecuado para la pestaña */
+    height: 14px;
+    display: block;
+    margin-right: 8px; /* Espacio entre el icono y el nombre del archivo */
+}
+
+/* Alineación del contenedor del icono */
+.file-tab .file-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-tab-btn {
+    background: none;
+    border: none;
+    color: #4b5563;
+    font-size: 16px;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.close-tab-btn:hover {
+    color: #ef4444;
+}
+
+/* Sección Editor */
+.editor-pane {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 55%;
+    min-width: 150px;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.editor-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.line-numbers {
+    width: 50px;
+    background-color: var(--line-number-bg);
+    color: #4b5563;
+    text-align: right;
+    padding: 10px 8px;
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+}
+
+#editor {
+    flex: 1;
+    background: transparent;
+    color: var(--color-editor-text);
+    border: none;
+    padding: 10px;
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    outline: none;
+    white-space: pre;
+    overflow: auto;
+    tab-size: 4;
+    resize: none;
+}
+
+/* Paneles de Resultados */
 .results-pane {
     flex: 1;
     min-width: 150px;
@@ -180,35 +286,6 @@ body {
     border: 1px solid var(--border);
 }
 
-.line-numbers {
-    width: 50px;
-    background-color: var(--line-number-bg);
-    color: #858585;
-    text-align: right;
-    padding: 10px 8px;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    border-right: 1px solid var(--border);
-    overflow: hidden;
-}
-
-#editor {
-    flex: 1;
-    background: transparent;
-    color: #9cdcfe;
-    border: none;
-    padding: 10px;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    resize: none;
-    outline: none;
-    white-space: pre;
-    overflow: auto;
-    tab-size: 4;
-}
-
 .tabs {
     background: var(--bg-tabs);
     display: flex;
@@ -218,47 +295,52 @@ body {
 .tab-link {
     background: none;
     border: none;
-    color: #969696;
-    padding: 8px 15px;
+    color: #9ca3af;
+    padding: 10px 18px;
     cursor: pointer;
     font-size: 12px;
+    border-bottom: 2px solid transparent;
 }
 
 .tab-link.active {
-    background: var(--bg-side);
+    background: linear-gradient(to bottom, var(--bg-tabs), var(--bg-side));
     color: white;
     border-bottom: 2px solid var(--accent);
 }
 
-.tab-content, .tab-content-inf {
+.tab-content,
+.tab-content-inf {
     display: none;
-    padding: 12px;
+    padding: 15px;
     font-family: 'Consolas', monospace;
     overflow: auto;
     flex: 1;
     font-size: 13px;
     white-space: pre-wrap;
-    color: #d4d4d4;
+    color: #e5e7eb;
 }
 
-.tab-content.active, .tab-content-inf.active {
+.tab-content.active,
+.tab-content-inf.active {
     display: block;
 }
 
+/* Footer y Modales */
 .status-bar {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
     height: 25px;
-    background: var(--accent);
+    background: linear-gradient(90deg, #6366f1, var(--accent));
     color: white;
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    padding-right: 20px;
+    padding-right: 25px;
     z-index: 2000;
     font-size: 12px;
+    font-weight: 500;
 }
 
 .modal-overlay {
@@ -268,32 +350,29 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.85);
     z-index: 5000;
     justify-content: center;
     align-items: center;
+    backdrop-filter: blur(4px);
 }
 
 .modal-box {
-    background: #1e1e1e;
-    border: 1px solid #333;
+    background: #161b26;
+    border: 1px solid var(--accent);
     border-radius: 12px;
-    width: 400px;
-    padding: 25px;
+    width: 420px;
+    padding: 30px;
     color: white;
 }
 
 .btn-confirm {
-    background: #004b7a;
-    color: white;
-    border-radius: 20px;
-    padding: 8px 25px;
-    cursor: pointer;
-    border: none;
-}
-
-.btn-confirm:hover {
     background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 25px;
+    cursor: pointer;
 }
 
 .btn-cancel {
@@ -301,10 +380,6 @@ body {
     color: white;
     border: 1px solid var(--accent);
     border-radius: 20px;
-    padding: 8px 25px;
+    padding: 10px 25px;
     cursor: pointer;
-}
-
-.btn-cancel:hover {
-    background: rgba(0, 122, 204, 0.1);
 }
