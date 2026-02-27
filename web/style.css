@@ -388,31 +388,26 @@ body {
     cursor: pointer;
 }
 
-/* =========================
-   SCROLLBAR (GLOBAL)
-   ========================= */
-
-/* Firefox */
 * {
-  scrollbar-width: thin;                 /* thin | auto */
-  scrollbar-color: #9381ff #0b1220;      /* thumb | track */
+  scrollbar-width: thin;                 
+  scrollbar-color: #9381ff #0b1220;      
 }
 
-/* Chrome / Edge / Safari */
+
 *::-webkit-scrollbar {
-  width: 10px;      /* scroll vertical */
-  height: 10px;     /* scroll horizontal */
+  width: 10px;      
+  height: 10px;     
 }
 
 *::-webkit-scrollbar-track {
-  background: #0b1220;                    /* track (fondo) */
+  background: #0b1220;                   
   border-radius: 999px;
 }
 
 *::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #ba3fd6, #9381ff);
   border-radius: 999px;
-  border: 2px solid #0b1220;              /* crea separación con el track */
+  border: 2px solid #0b1220;             
 }
 
 *::-webkit-scrollbar-thumb:hover {
@@ -420,5 +415,5 @@ body {
 }
 
 *::-webkit-scrollbar-corner {
-  background: #0b1220;                    /* esquina cuando hay ambos scrolls */
+  background: #0b1220;                   
 }
