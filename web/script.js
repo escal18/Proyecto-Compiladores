@@ -169,13 +169,49 @@ async function ejecutar() {
 }
 
 function verTab(evt, name) {
-    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-    document.getElementById(name).classList.add("active");
+    const panel = document.getElementById("right-panel"); // results-pane (arriba derecha)
+    if (!panel) return;
+
+    // 1) contenido
+    panel.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    const content = panel.querySelector("#" + name);
+    if (content) content.classList.add("active");
+
+    // 2) botones (pestañas)
+    panel.querySelectorAll(".tabs .tab-link").forEach(b => b.classList.remove("active"));
+
+    // si viene event, activamos el botón clickeado
+    if (evt && evt.currentTarget) {
+        evt.currentTarget.classList.add("active");
+        return;
+    }
+
+    // si NO viene event (ej: compilar()), buscamos el botón que abre ese tab
+    const btn = Array.from(panel.querySelectorAll(".tabs .tab-link"))
+        .find(b => (b.getAttribute("onclick") || "").includes(`'${name}'`));
+    if (btn) btn.classList.add("active");
 }
 
 function verTabInferior(evt, name) {
-    document.querySelectorAll(".tab-content-inf").forEach(c => c.classList.remove("active"));
-    document.getElementById(name).classList.add("active");
+    const panel = document.querySelector(".bottom-pane"); // panel inferior
+    if (!panel) return;
+
+    // 1) contenido
+    panel.querySelectorAll(".tab-content-inf").forEach(c => c.classList.remove("active"));
+    const content = panel.querySelector("#" + name);
+    if (content) content.classList.add("active");
+
+    // 2) botones
+    panel.querySelectorAll(".tabs .tab-link").forEach(b => b.classList.remove("active"));
+
+    if (evt && evt.currentTarget) {
+        evt.currentTarget.classList.add("active");
+        return;
+    }
+
+    const btn = Array.from(panel.querySelectorAll(".tabs .tab-link"))
+        .find(b => (b.getAttribute("onclick") || "").includes(`'${name}'`));
+    if (btn) btn.classList.add("active");
 }
 
 window.onkeydown = (e) => {

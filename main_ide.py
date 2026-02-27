@@ -16,7 +16,7 @@ def abrir_archivo_py():
     ruta = seleccionar_ruta("abrir")
     if ruta:
         try:
-            with open(ruta, "r", encoding="utf-8") as f:
+            with open(ruta, "r", encoding="cp1252") as f:
                 contenido = f.read()
             return {"ruta": ruta, "contenido": contenido}
         except Exception as e:
