@@ -9,6 +9,7 @@
     --line-number-bg: #0f121a;
     --color-run: #00ff9d;
     --color-editor-text: #e0e7ff;
+    --lh: 24px;
 }
 
 body {
@@ -244,7 +245,7 @@ button[onclick="guardarComo()"] svg {
     position: absolute;
     left: 50px;
     right: 0;
-    height: 21px;
+    height: var(--lh);
     background: rgba(123, 97, 255, 0.08);
     z-index: 0;
     pointer-events: none;
@@ -256,13 +257,22 @@ button[onclick="guardarComo()"] svg {
     background-color: var(--line-number-bg);
     color: #4b5563;
     text-align: right;
-    padding: 10px 8px;
+    padding: 10px 8px 50px 8px;
     font-family: 'Consolas', monospace;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: var(--lh);
     border-right: 1px solid var(--border);
     overflow: hidden;
     z-index: 2;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.line-numbers div {
+    height: var(--lh);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
 }
 
 .line-numbers div.active-line {
@@ -279,7 +289,7 @@ button[onclick="guardarComo()"] svg {
     padding: 10px;
     font-family: 'Consolas', monospace;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: var(--lh);
     outline: none;
     white-space: pre;
     overflow: auto;
@@ -287,6 +297,8 @@ button[onclick="guardarComo()"] svg {
     resize: none;
     z-index: 1;
     position: relative;
+    margin: 0;
+    box-sizing: border-box;
 }
 
 .results-pane {

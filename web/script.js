@@ -125,7 +125,7 @@ function actualizarEditor() {
         archivo.modificado = archivo.contenido !== archivo.original;
         actualizarPestañas();
         highlight.style.display = 'block';
-        highlight.style.top = `${(filaActual - 1) * 21 + 10}px`;
+        highlight.style.top = `${(filaActual - 1) * 24 + 10}px`;
     } else { highlight.style.display = 'none'; }
     const totalLineas = texto.split(/\r?\n/).length;
     let numerosHtml = "";
