@@ -115,11 +115,19 @@ function actualizarEditor() {
     const editor = document.getElementById('editor');
     const lineNumbers = document.getElementById('line-numbers');
     const highlight = document.getElementById('line-highlight');
+    const highlightingContent = document.getElementById('highlighting-content');
     const archivo = archivosAbiertos.find(a => a.id === idActivo);
+    
     const texto = editor.value;
+    
+    // 1. Aplicar Resaltado de Sintaxis
+    highlightingContent.innerHTML = resaltarCodigo(texto);
+
+    // 2. Lógica de cursor y líneas
     const pos = editor.selectionStart;
     const lineasSub = texto.substring(0, pos).split(/\r?\n/);
     const filaActual = lineasSub.length;
+
     if (archivo) {
         archivo.contenido = texto;
         archivo.modificado = archivo.contenido !== archivo.original;
@@ -127,19 +135,48 @@ function actualizarEditor() {
         highlight.style.display = 'block';
         highlight.style.top = `${(filaActual - 1) * 24 + 10}px`;
     } else { highlight.style.display = 'none'; }
+
     const totalLineas = texto.split(/\r?\n/).length;
     let numerosHtml = "";
     for (let i = 1; i <= totalLineas; i++) {
         numerosHtml += `<div class="${i === filaActual ? 'active-line' : ''}">${i}</div>`;
     }
     lineNumbers.innerHTML = numerosHtml;
+    
     document.getElementById('posicion-cursor').innerText = `Archivo: ${archivo ? archivo.nombre : 'Sin título'} | Línea: ${filaActual} | Columna: ${lineasSub[filaActual - 1].length}`;
     sincronizarScroll();
 }
 
+function resaltarCodigo(codigo) {
+    // 1. Escapar caracteres HTML básicos para evitar errores de renderizado
+    let html = codigo.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // 2. Definir una sola expresión regular maestra (igual que en lexer.py) [cite: 11-16]
+    // El orden importa: primero lo más complejo o largo
+    const regexMaster = /(?<c3>\/\*[\s\S]*?\*\/|\/\/.*)|(?<c4>\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b)|(?<c1>\d+(\.\d+)?)|(?<c5>\+\+|--|\+|\-|\*|\/|%|\^)|(?<c6><=|>=|!=|==|<|>|&&|\|\||!)|(?<c2>\b[a-zA-Z][a-zA-Z0-9]*\b)/g;
+
+    // 3. Reemplazar usando los nombres de los grupos
+    return html.replace(regexMaster, (match, ...args) => {
+        const groups = args[args.length - 1]; // El último argumento son los grupos capturados
+        if (groups.c3) return `<span class="token-c3">${match}</span>`; // Comentarios
+        if (groups.c4) return `<span class="token-c4">${match}</span>`; // Reservadas
+        if (groups.c1) return `<span class="token-c1">${match}</span>`; // Números
+        if (groups.c5) return `<span class="token-c5">${match}</span>`; // Aritméticos
+        if (groups.c6) return `<span class="token-c6">${match}</span>`; // Rel/Log
+        if (groups.c2) return `<span class="token-c2">${match}</span>`; // ID
+        return match;
+    }) + "\n";
+}
+
 function sincronizarScroll() {
     const editor = document.getElementById('editor');
-    document.getElementById('line-numbers').scrollTop = editor.scrollTop;
+    const highlighting = document.getElementById('highlighting-content');
+    const lineNumbers = document.getElementById('line-numbers');
+    
+    highlighting.scrollTop = editor.scrollTop;
+    highlighting.scrollLeft = editor.scrollLeft;
+    lineNumbers.scrollTop = editor.scrollTop;
+    
     document.getElementById('line-highlight').style.transform = `translateY(-${editor.scrollTop}px)`;
 }
 

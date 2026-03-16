@@ -281,26 +281,6 @@ button[onclick="guardarComo()"] svg {
     font-weight: bold;
 }
 
-#editor {
-    flex: 1;
-    background: transparent;
-    color: var(--color-editor-text);
-    border: none;
-    padding: 10px;
-    font-family: 'Consolas', monospace;
-    font-size: 14px;
-    line-height: var(--lh);
-    outline: none;
-    white-space: pre;
-    overflow: auto;
-    tab-size: 4;
-    resize: none;
-    z-index: 1;
-    position: relative;
-    margin: 0;
-    box-sizing: border-box;
-}
-
 .results-pane {
     flex: 1;
     background: var(--bg-side);
@@ -443,3 +423,64 @@ button[onclick="guardarComo()"] svg {
 *::-webkit-scrollbar-corner {
     background: #0b1220;
 }
+
+/* Capa superior: El TEXTAREA donde escribes */
+#editor {
+    position: absolute;
+    top: 0;
+    left: 50px;
+    width: calc(100% - 70px);
+    height: 100%;
+    padding: 10px;
+    margin: 0;
+    z-index: 2; /* Siempre arriba para recibir los clics */
+    background: transparent;
+    color: transparent; /* El texto real es invisible */
+    caret-color: white; /* El cursor sí se ve */
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    line-height: var(--lh);
+    tab-size: 4;
+    white-space: pre;
+    overflow: auto;
+    resize: none;
+    border: none;
+    outline: none;
+    box-sizing: border-box;
+}
+
+/* Capa inferior: El DIV que muestra los colores */
+#highlighting-content {
+    position: absolute;
+    top: 0;
+    left: 50px;
+    width: calc(100% - 70px);
+    height: 100%;
+    padding: 10px;
+    margin: 0;
+    z-index: 1; /* Debajo del textarea */
+    color: var(--color-editor-text);
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    line-height: var(--lh);
+    tab-size: 4;
+    white-space: pre;
+    overflow: hidden; /* El scroll lo controla el editor */
+    pointer-events: none; /* No estorba al mouse */
+    box-sizing: border-box;
+}
+
+#highlighting-content {
+    color: var(--color-editor-text);
+    z-index: 1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* Colores según el PDF  */
+.token-c1 { color: #d19a66; } /* Números */
+.token-c2 { color: #61afef; } /* Identificadores */
+.token-c3 { color: #7f848e; font-style: italic; } /* Comentarios */
+.token-c4 { color: #c678dd; font-weight: bold; } /* Reservadas */
+.token-c5 { color: #56b6c2; } /* Aritméticos */
+.token-c6 { color: #e06c75; } /* Relacionales y Lógicos */

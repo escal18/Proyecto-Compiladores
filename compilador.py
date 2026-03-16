@@ -1,17 +1,26 @@
 import json
 import sys
+import lexer
 
 def main():
+    if len(sys.argv) < 3: return
+    
     fase = sys.argv[1]
-    archivo = sys.argv[2]
+    ruta_archivo = sys.argv[2]
     
     respuesta = {"resultado": "", "errores": [], "tabla_simbolos": []}
 
     try:
+        with open(ruta_archivo, "r", encoding="utf-8") as f:
+            codigo = f.read()
+            
         if fase == "lexico":
-            respuesta["resultado"] = "Lista de Tokens..." 
+            # Llamamos al lexer y desempaquetamos tokens y errores [cite: 28, 29]
+            tokens, errores = lexer.analizar(codigo)
+            respuesta["resultado"] = tokens
+            respuesta["errores"] = errores
         elif fase == "sintactico":
-            respuesta["resultado"] = "Árbol Sintáctico Estructurado..."
+            respuesta["resultado"] = "Próxima fase..."
         elif fase == "semantico":
             respuesta["resultado"] = "Validaciones Semánticas..."
         elif fase == "intermedio":
@@ -20,6 +29,9 @@ def main():
             respuesta["resultado"] = "Salida real del programa..."
             
     except Exception as e:
-        respuesta["errores"].append({"linea": 1, "desc": str(e)})
+        respuesta["errores"].append({"linea": "N/A", "desc": str(e)})
 
     print(json.dumps(respuesta))
+
+if __name__ == "__main__":
+    main()

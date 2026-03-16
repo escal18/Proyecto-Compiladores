@@ -1,0 +1,7 @@
+int x = 10;
+float y = 20.5;
+// Esto es un comentario
+if (x <= y) {
+    cout << "Hola";
+}
+@  // Esto debería marcar error léxico
