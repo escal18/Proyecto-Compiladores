@@ -433,10 +433,13 @@ button[onclick="guardarComo()"] svg {
     height: 100%;
     padding: 10px;
     margin: 0;
-    z-index: 2; /* Siempre arriba para recibir los clics */
+    z-index: 2;
+    /* Siempre arriba para recibir los clics */
     background: transparent;
-    color: transparent; /* El texto real es invisible */
-    caret-color: white; /* El cursor sí se ve */
+    color: transparent;
+    /* El texto real es invisible */
+    caret-color: white;
+    /* El cursor sí se ve */
     font-family: 'Consolas', monospace;
     font-size: 14px;
     line-height: var(--lh);
@@ -458,15 +461,18 @@ button[onclick="guardarComo()"] svg {
     height: 100%;
     padding: 10px;
     margin: 0;
-    z-index: 1; /* Debajo del textarea */
+    z-index: 1;
+    /* Debajo del textarea */
     color: var(--color-editor-text);
     font-family: 'Consolas', monospace;
     font-size: 14px;
     line-height: var(--lh);
     tab-size: 4;
     white-space: pre;
-    overflow: hidden; /* El scroll lo controla el editor */
-    pointer-events: none; /* No estorba al mouse */
+    overflow: hidden;
+    /* El scroll lo controla el editor */
+    pointer-events: none;
+    /* No estorba al mouse */
     box-sizing: border-box;
 }
 
@@ -478,9 +484,103 @@ button[onclick="guardarComo()"] svg {
 }
 
 /* Colores según el PDF  */
-.token-c1 { color: #d19a66; } /* Números */
-.token-c2 { color: #61afef; } /* Identificadores */
-.token-c3 { color: #7f848e; font-style: italic; } /* Comentarios */
-.token-c4 { color: #c678dd; font-weight: bold; } /* Reservadas */
-.token-c5 { color: #56b6c2; } /* Aritméticos */
-.token-c6 { color: #e06c75; } /* Relacionales y Lógicos */
+.token-c1 {
+    color: #d19a66;
+}
+
+/* Números */
+.token-c2 {
+    color: #61afef;
+}
+
+/* Identificadores */
+.token-c3 {
+    color: #7f848e;
+    font-style: italic;
+}
+
+/* Comentarios */
+.token-c4 {
+    color: #c678dd;
+    font-weight: bold;
+}
+
+/* Reservadas */
+.token-c5 {
+    color: #56b6c2;
+}
+
+/* Aritméticos */
+.token-c6 {
+    color: #e06c75;
+}
+
+/* Estilos para la tabla de tokens */
+.tabla-tokens {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+}
+
+.tabla-tokens th {
+    /* Cambiado de sticky a static para que no se quede fija */
+    position: static;
+    background: var(--bg-tabs);
+    color: var(--accent);
+    text-align: left;
+    padding: 10px;
+    border-bottom: 2px solid var(--border);
+}
+
+.tabla-tokens td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    color: #e5e7eb;
+}
+
+.tabla-tokens tr:hover {
+    background: rgba(123, 97, 255, 0.05);
+}
+
+/* Badges de colores para los tipos de tokens */
+[class^="badge-"] {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.badge-RESERVADA {
+    background: #c678dd33;
+    color: #c678dd;
+    border: 1px solid #c678dd;
+}
+
+.badge-ID {
+    background: #61afef33;
+    color: #61afef;
+    border: 1px solid #61afef;
+}
+
+.badge-NUMERO_REAL,
+.badge-NUMERO_ENTERO {
+    background: #d19a6633;
+    color: #d19a66;
+    border: 1px solid #d19a66;
+}
+
+.badge-OPERADOR_ARIT,
+.badge-OPERADOR_REL,
+.badge-OPERADOR_LOG {
+    background: #56b6c233;
+    color: #56b6c2;
+    border: 1px solid #56b6c2;
+}
+
+.badge-SIMBOLO {
+    background: #abb2bf33;
+    color: #abb2bf;
+    border: 1px solid #abb2bf;
+}

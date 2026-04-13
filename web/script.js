@@ -111,17 +111,20 @@ function actualizarPestañas() {
     });
 }
 
+// En script.js
 function actualizarEditor() {
     const editor = document.getElementById('editor');
+    const highlightingContent = document.getElementById('highlighting-content');
     const lineNumbers = document.getElementById('line-numbers');
     const highlight = document.getElementById('line-highlight');
-    const highlightingContent = document.getElementById('highlighting-content');
     const archivo = archivosAbiertos.find(a => a.id === idActivo);
     
-    const texto = editor.value;
+    // Obtener el texto PURO del textarea
+    const texto = editor.value; 
     
-    // 1. Aplicar Resaltado de Sintaxis
-    highlightingContent.innerHTML = resaltarCodigo(texto);
+    // 1. Aplicar Resaltado de Sintaxis SOLO a la capa visual
+    // Pasamos el texto puro, la función se encarga de los colores
+    highlightingContent.innerHTML = resaltarCodigo(texto); 
 
     // 2. Lógica de cursor y líneas
     const pos = editor.selectionStart;
@@ -129,13 +132,14 @@ function actualizarEditor() {
     const filaActual = lineasSub.length;
 
     if (archivo) {
-        archivo.contenido = texto;
+        archivo.contenido = texto; // Guardar el texto puro, sin "&gt;"
         archivo.modificado = archivo.contenido !== archivo.original;
         actualizarPestañas();
         highlight.style.display = 'block';
         highlight.style.top = `${(filaActual - 1) * 24 + 10}px`;
-    } else { highlight.style.display = 'none'; }
+    }
 
+    // Actualizar números de línea
     const totalLineas = texto.split(/\r?\n/).length;
     let numerosHtml = "";
     for (let i = 1; i <= totalLineas; i++) {
@@ -143,21 +147,23 @@ function actualizarEditor() {
     }
     lineNumbers.innerHTML = numerosHtml;
     
-    document.getElementById('posicion-cursor').innerText = `Archivo: ${archivo ? archivo.nombre : 'Sin título'} | Línea: ${filaActual} | Columna: ${lineasSub[filaActual - 1].length}`;
+    // Actualizar barra de estado
+    const columnaActual = lineasSub[filaActual - 1].length;
+    document.getElementById('posicion-cursor').innerText = 
+        `Archivo: ${archivo ? archivo.nombre : 'Sin título'} | Línea: ${filaActual} | Columna: ${columnaActual}`;
+    
     sincronizarScroll();
 }
 
 function resaltarCodigo(codigo) {
-    // 1. Escapar caracteres HTML básicos para evitar errores de renderizado
+    // Escapar caracteres para que el navegador los pinte como texto y no como HTML real
     let html = codigo.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-    // 2. Definir una sola expresión regular maestra (igual que en lexer.py) [cite: 11-16]
-    // El orden importa: primero lo más complejo o largo
-    const regexMaster = /(?<c3>\/\*[\s\S]*?\*\/|\/\/.*)|(?<c4>\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b)|(?<c1>\d+(\.\d+)?)|(?<c5>\+\+|--|\+|\-|\*|\/|%|\^)|(?<c6><=|>=|!=|==|<|>|&&|\|\||!)|(?<c2>\b[a-zA-Z][a-zA-Z0-9]*\b)/g;
+    // Regex maestra (asegúrate de que los operadores compuestos como && estén primero)
+    const regexMaster = /(?<c3>\/\*[\s\S]*?\*\/|\/\/.*)|(?<c4>\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b)|(?<c1>\d+\.\d+|\d+)|(?<c5>\+\+|--|\+|\-|\*|\/|%|\^)|(?<c6><=|>=|!=|==|<|>|&&|\|\||!)|(?<c2>\b[a-zA-Z][a-zA-Z0-9]*\b)/g;
 
-    // 3. Reemplazar usando los nombres de los grupos
     return html.replace(regexMaster, (match, ...args) => {
-        const groups = args[args.length - 1]; // El último argumento son los grupos capturados
+        const groups = args[args.length - 1];
         if (groups.c3) return `<span class="token-c3">${match}</span>`; // Comentarios
         if (groups.c4) return `<span class="token-c4">${match}</span>`; // Reservadas
         if (groups.c1) return `<span class="token-c1">${match}</span>`; // Números
@@ -180,21 +186,59 @@ function sincronizarScroll() {
     document.getElementById('line-highlight').style.transform = `translateY(-${editor.scrollTop}px)`;
 }
 
+// En script.js
 async function compilar(fase) {
     const res = await eel.ejecutar_fase_compilador(fase, document.getElementById('editor').value)();
+    
+    // Mapeo de IDs según index.html
     const tabMap = { 'lexico': 'tab-lexico', 'sintactico': 'tab-sintactico', 'semantico': 'tab-semantico', 'intermedio': 'tab-intermedio' };
     const errorTabMap = { 'lexico': 'err-lexico', 'sintactico': 'err-sintactico', 'semantico': 'err-semantico', 'intermedio': 'err-intermedio' };
-    document.getElementById(tabMap[fase]).innerText = res.resultado;
+    
+    // 1. Mostrar Resultado (Tabla o Texto)
+    const displayArea = document.getElementById(tabMap[fase]);
+    if (fase === 'lexico' && Array.isArray(res.resultado)) {
+        displayArea.innerHTML = generarTablaTokens(res.resultado); // Función auxiliar para la tabla
+    } else {
+        displayArea.innerText = res.resultado || "";
+    }
+
+    // 2. Manejo de Errores
     const errorArea = document.getElementById(errorTabMap[fase]);
+    errorArea.innerText = ""; // Limpiar errores previos
+
     if (res.errores && res.errores.length > 0) {
-        errorArea.innerText = res.errores.map(e => `Línea ${e.linea}: ${e.desc}`).join('\n');
-        errorArea.style.color = "#f44336";
-        verTabInferior(null, errorTabMap[fase]);
+        // Formatear y mostrar errores
+        errorArea.innerText = res.errores.map(e => `Línea ${e.linea}, Col ${e.columna}: ${e.desc}`).join('\n');
+        errorArea.style.color = "#f44336"; // Rojo para errores
+        
+        // Cambiar automáticamente a la pestaña de errores correspondiente
+        verTabInferior(null, errorTabMap[fase]); 
     } else {
         errorArea.innerText = "0 errores detectados.";
-        errorArea.style.color = "#4ec9b0";
+        errorArea.style.color = "#4ec9b0"; // Verde para éxito
     }
-    verTab(null, tabMap[fase]);
+    
+    verTab(null, tabMap[fase]); // Mostrar pestaña de resultados
+}
+
+// Función auxiliar para mantener limpio el código
+function generarTablaTokens(tokens) {
+    return `
+        <table class="tabla-tokens">
+            <thead>
+                <tr><th>Token</th><th>Lexema</th><th>Línea</th><th>Col</th></tr>
+            </thead>
+            <tbody>
+                ${tokens.map(t => `
+                    <tr>
+                        <td><span class="badge-${t.tipo}">${t.tipo}</span></td>
+                        <td>${t.valor}</td>
+                        <td>${t.linea}</td>
+                        <td>${t.columna}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>`;
 }
 
 async function ejecutar() {
