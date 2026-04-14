@@ -1,21 +1,24 @@
 import re
 
-# Definición de tokens. El orden es CRÍTICO.
+# lexer.py - Definición de tokens estrictamente según el PDF
 TOKENS_RULES = [
-    ('COMENTARIO_MULT', r'/\*[\s\S]*?\*/'),          
-    ('COMENTARIO_LINEA', r'//.*'),                   
-    ('NUMERO_REAL',   r'\d+\.\d+'),                  # Detecta 32.32
-    ('NUMERO_ERROR',  r'\d+\.'),                     # Captura errores como '32.'
-    ('NUMERO_ENTERO', r'\d+'),                       
+    ('COMENTARIO_MULT', r'/\*[\s\S]*?\*/'),          # Estilo C 
+    ('COMENTARIO_LINEA', r'//.*'),                   # Estilo C 
+    ('NUMERO_REAL',   r'\d+\.\d+'),                  # Color 1 [cite: 11]
+    ('NUMERO_ERROR',  r'\d+\.'),                     # Manejo de error léxico 
+    ('NUMERO_ENTERO', r'\d+'),                       # Color 1 [cite: 11]
+    # Lista exacta de 12 palabras reservadas [cite: 13]
     ('RESERVADA',     r'\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b'), 
-    ('OPERADOR_ARIT', r'\+\+|--|\+|\-|\*|/|%|\^'),   # Compuestos van PRIMERO
-    ('OPERADOR_REL',  r'<=|>=|!=|==|<|>'),           # Compuestos van PRIMERO
-    ('OPERADOR_LOG',  r'&&|\|\||!|&|\|'), # Agregamos & y | individuales
-    ('ASIGNACION',    r'='),
-    ('SIMBOLO',       r'\(|\)|\{|\}|,|;|:|"|\''), # Agregamos los dos puntos :
-    ('ID',            r'[a-zA-Z][a-zA-Z0-9]*'),      
-    ('ESPACIO',       r'[ \t]+'),                    
-    ('NUEVA_LINEA',   r'\n'),                        
+    ('OPERADOR_ARIT', r'\+\+|--|\+|\-|\*|/|%|\^'),   # Color 5 [cite: 14]
+    ('OPERADOR_REL',  r'<=|>=|!=|==|<|>'),           # Color 6 [cite: 15]
+    # Solo acepta parejas para and/or 
+    ('OPERADOR_LOG',  r'&&|\|\||!'),                 # Color 6 
+    ('ASIGNACION',    r'='),                         # Asignación [cite: 19]
+    # Símbolos oficiales únicamente [cite: 18]
+    ('SIMBOLO',       r'\(|\)|\{|\}|,|;|"|\''),      
+    ('ID',            r'[a-zA-Z][a-zA-Z0-9]*'),      # Color 2 
+    ('ESPACIO',       r'[ \t]+'),                    # Ignorar [cite: 21]
+    ('NUEVA_LINEA',   r'\n'),                        # Contador 
 ]
 
 def analizar(codigo):

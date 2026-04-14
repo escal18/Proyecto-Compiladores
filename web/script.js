@@ -156,26 +156,28 @@ function actualizarEditor() {
 }
 
 function resaltarCodigo(codigo) {
-    // 1. Definimos la regex (asegúrate de incluir los nuevos símbolos)
-    const regexMaster = /(?<c3>\/\*[\s\S]*?\*\/|\/\/.*)|(?<c4>\b(if|else|end|do|while|switch|case|int|float|main|cin|cout|real|then|until)\b)|(?<c1>\d+\.\d+|\d+)|(?<c5>\+\+|--|\+|\-|\*|\/|%|\^)|(?<c6><=|>=|!=|==|<|>|&&|\|\||!)|(?<c2>\b[a-zA-Z][a-zA-Z0-9]*\b)/g;
+    // 1. Limpieza de entidades para que el análisis sea real
+    let codigoLimpio = codigo.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 
-    // 2. Primero aplicamos el resaltado sobre el texto puro
-    let resaltado = codigo.replace(regexMaster, (match, ...args) => {
+    // 2. Regex Maestra actualizada (sin & o | individuales)
+    const regexMaster = /(?<c3>\/\*[\s\S]*?\*\/|\/\/.*)|(?<c4>\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b)|(?<c1>\d+\.\d+|\d+)|(?<c5>\+\+|--|\+|\-|\*|\/|%|\^)|(?<c6><=|>=|!=|==|<|>|&&|\|\||!)|(?<c2>[a-zA-Z][a-zA-Z0-9]*)|(?<error>[&|]+|[^ \t\n\w])/g;
+
+    return codigoLimpio.replace(regexMaster, (match, ...args) => {
         const groups = args[args.length - 1];
         
-        // Antes de envolver en span, escapamos el match para que < no rompa el HTML
-        let safeMatch = match.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        // Escapamos para el HTML final
+        let safe = match.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-        if (groups.c3) return `<span class="token-c3">${safeMatch}</span>`;
-        if (groups.c4) return `<span class="token-c4">${safeMatch}</span>`;
-        if (groups.c1) return `<span class="token-c1">${safeMatch}</span>`;
-        if (groups.c5) return `<span class="token-c5">${safeMatch}</span>`;
-        if (groups.c6) return `<span class="token-c6">${safeMatch}</span>`;
-        if (groups.c2) return `<span class="token-c2">${safeMatch}</span>`;
-        return safeMatch;
-    });
-
-    return resaltado + "\n";
+        if (groups.c3) return `<span class="token-c3">${safe}</span>`;
+        if (groups.c4) return `<span class="token-c4">${safe}</span>`;
+        if (groups.c1) return `<span class="token-c1">${safe}</span>`;
+        if (groups.c5) return `<span class="token-c5">${safe}</span>`;
+        if (groups.c6) return `<span class="token-c6">${safe}</span>`;
+        if (groups.c2) return `<span class="token-c2">${safe}</span>`;
+        
+        // Si cae aquí, es un error (como un & solo)
+        return `<span class="token-error">${safe}</span>`; 
+    }).replace(/\n/g, "<br>");
 }
 
 function sincronizarScroll() {
