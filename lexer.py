@@ -10,9 +10,9 @@ TOKENS_RULES = [
     ('RESERVADA',     r'\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b'), 
     ('OPERADOR_ARIT', r'\+\+|--|\+|\-|\*|/|%|\^'),   # Compuestos van PRIMERO
     ('OPERADOR_REL',  r'<=|>=|!=|==|<|>'),           # Compuestos van PRIMERO
-    ('OPERADOR_LOG',  r'&&|\|\||!'),                 
+    ('OPERADOR_LOG',  r'&&|\|\||!|&|\|'), # Agregamos & y | individuales
     ('ASIGNACION',    r'='),
-    ('SIMBOLO',       r'\(|\)|\{|\}|,|;|"|\''),      
+    ('SIMBOLO',       r'\(|\)|\{|\}|,|;|:|"|\''), # Agregamos los dos puntos :
     ('ID',            r'[a-zA-Z][a-zA-Z0-9]*'),      
     ('ESPACIO',       r'[ \t]+'),                    
     ('NUEVA_LINEA',   r'\n'),                        

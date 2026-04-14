@@ -156,22 +156,26 @@ function actualizarEditor() {
 }
 
 function resaltarCodigo(codigo) {
-    // Escapar caracteres para que el navegador los pinte como texto y no como HTML real
-    let html = codigo.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    // 1. Definimos la regex (asegúrate de incluir los nuevos símbolos)
+    const regexMaster = /(?<c3>\/\*[\s\S]*?\*\/|\/\/.*)|(?<c4>\b(if|else|end|do|while|switch|case|int|float|main|cin|cout|real|then|until)\b)|(?<c1>\d+\.\d+|\d+)|(?<c5>\+\+|--|\+|\-|\*|\/|%|\^)|(?<c6><=|>=|!=|==|<|>|&&|\|\||!)|(?<c2>\b[a-zA-Z][a-zA-Z0-9]*\b)/g;
 
-    // Regex maestra (asegúrate de que los operadores compuestos como && estén primero)
-    const regexMaster = /(?<c3>\/\*[\s\S]*?\*\/|\/\/.*)|(?<c4>\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b)|(?<c1>\d+\.\d+|\d+)|(?<c5>\+\+|--|\+|\-|\*|\/|%|\^)|(?<c6><=|>=|!=|==|<|>|&&|\|\||!)|(?<c2>\b[a-zA-Z][a-zA-Z0-9]*\b)/g;
-
-    return html.replace(regexMaster, (match, ...args) => {
+    // 2. Primero aplicamos el resaltado sobre el texto puro
+    let resaltado = codigo.replace(regexMaster, (match, ...args) => {
         const groups = args[args.length - 1];
-        if (groups.c3) return `<span class="token-c3">${match}</span>`; // Comentarios
-        if (groups.c4) return `<span class="token-c4">${match}</span>`; // Reservadas
-        if (groups.c1) return `<span class="token-c1">${match}</span>`; // Números
-        if (groups.c5) return `<span class="token-c5">${match}</span>`; // Aritméticos
-        if (groups.c6) return `<span class="token-c6">${match}</span>`; // Rel/Log
-        if (groups.c2) return `<span class="token-c2">${match}</span>`; // ID
-        return match;
-    }) + "\n";
+        
+        // Antes de envolver en span, escapamos el match para que < no rompa el HTML
+        let safeMatch = match.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        if (groups.c3) return `<span class="token-c3">${safeMatch}</span>`;
+        if (groups.c4) return `<span class="token-c4">${safeMatch}</span>`;
+        if (groups.c1) return `<span class="token-c1">${safeMatch}</span>`;
+        if (groups.c5) return `<span class="token-c5">${safeMatch}</span>`;
+        if (groups.c6) return `<span class="token-c6">${safeMatch}</span>`;
+        if (groups.c2) return `<span class="token-c2">${safeMatch}</span>`;
+        return safeMatch;
+    });
+
+    return resaltado + "\n";
 }
 
 function sincronizarScroll() {
@@ -188,7 +192,14 @@ function sincronizarScroll() {
 
 // En script.js
 async function compilar(fase) {
-    const res = await eel.ejecutar_fase_compilador(fase, document.getElementById('editor').value)();
+    let codigoPuro = document.getElementById('editor').value;
+    
+    // LIMPIEZA CRÍTICA: Quitamos entidades HTML que se hayan colado
+    codigoPuro = codigoPuro.replace(/&amp;/g, '&')
+                           .replace(/&lt;/g, '<')
+                           .replace(/&gt;/g, '>');
+
+    const res = await eel.ejecutar_fase_compilador(fase, codigoPuro)();
     
     // Mapeo de IDs según index.html
     const tabMap = { 'lexico': 'tab-lexico', 'sintactico': 'tab-sintactico', 'semantico': 'tab-semantico', 'intermedio': 'tab-intermedio' };
