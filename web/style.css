@@ -149,8 +149,8 @@ button[onclick="guardarComo()"] svg {
     display: flex;
     flex-direction: column;
     flex: 1;
-    gap: 4px;
-    padding: 4px;
+    gap: 0;
+    padding: 0;
     background: #000;
     height: calc(100vh - 110px);
     overflow: hidden;
@@ -287,6 +287,8 @@ button[onclick="guardarComo()"] svg {
     display: flex;
     flex-direction: column;
     border: 1px solid var(--border);
+    border-right: none;
+    border-top: none;
     overflow: hidden;
 }
 
@@ -323,9 +325,10 @@ button[onclick="guardarComo()"] svg {
 .tab-content,
 .tab-content-inf {
     display: none;
-    padding: 15px;
+    padding: 15px 5px 15px 15px;
     font-family: 'Consolas', monospace;
-    overflow: auto;
+    overflow-y: scroll; 
+    overflow-x: hidden;
     flex: 1;
     font-size: 13px;
     color: #e5e7eb;
@@ -401,8 +404,8 @@ button[onclick="guardarComo()"] svg {
 
 
 *::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
 }
 
 *::-webkit-scrollbar-track {
@@ -429,7 +432,8 @@ button[onclick="guardarComo()"] svg {
     position: absolute;
     top: 0;
     left: 50px;
-    width: calc(100% - 70px);
+    width: calc(100% - 50px);
+    right: 0;
     height: 100%;
     padding: 10px;
     margin: 0;
@@ -457,7 +461,8 @@ button[onclick="guardarComo()"] svg {
     position: absolute;
     top: 0;
     left: 50px;
-    width: calc(100% - 70px);
+    width: calc(100% - 50px);
+    right: 0;
     height: 100%;
     padding: 10px;
     margin: 0;
@@ -518,6 +523,7 @@ button[onclick="guardarComo()"] svg {
 /* Estilos para la tabla de tokens */
 .tabla-tokens {
     width: 100%;
+    margin: 0;
     border-collapse: collapse;
     font-family: 'Segoe UI', sans-serif;
     font-size: 12px;
@@ -537,6 +543,13 @@ button[onclick="guardarComo()"] svg {
     padding: 8px 10px;
     border-bottom: 1px solid var(--border);
     color: #e5e7eb;
+}
+
+/* Asegura que la tabla ocupe el 100% y los badges se vean bien */
+.tabla-tokens td span {
+    display: inline-block;
+    min-width: 80px; /* Tamaño mínimo para que todos los badges se vean iguales */
+    text-align: center;
 }
 
 .tabla-tokens tr:hover {
@@ -583,4 +596,11 @@ button[onclick="guardarComo()"] svg {
     background: #abb2bf33;
     color: #abb2bf;
     border: 1px solid #abb2bf;
+}
+
+/* Badge específico para ASIGNACION */
+.badge-ASIGNACION {
+    background: #e06c7533; /* Un tono rojizo suave para diferenciarlo */
+    color: #e06c75;
+    border: 1px solid #e06c75;
 }

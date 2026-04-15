@@ -194,44 +194,94 @@ function sincronizarScroll() {
 
 // En script.js
 async function compilar(fase) {
-    let codigoPuro = document.getElementById('editor').value;
-    
-    // LIMPIEZA CRÍTICA: Quitamos entidades HTML que se hayan colado
-    codigoPuro = codigoPuro.replace(/&amp;/g, '&')
-                           .replace(/&lt;/g, '<')
-                           .replace(/&gt;/g, '>');
+    const editor = document.getElementById('editor');
+    let codigoRaw = document.getElementById('editor').value;
 
-    const res = await eel.ejecutar_fase_compilador(fase, codigoPuro)();
-    
-    // Mapeo de IDs según index.html
-    const tabMap = { 'lexico': 'tab-lexico', 'sintactico': 'tab-sintactico', 'semantico': 'tab-semantico', 'intermedio': 'tab-intermedio' };
-    const errorTabMap = { 'lexico': 'err-lexico', 'sintactico': 'err-sintactico', 'semantico': 'err-semantico', 'intermedio': 'err-intermedio' };
-    
-    // 1. Mostrar Resultado (Tabla o Texto)
+    // 1. LIMPIEZA Y NORMALIZACIÓN
+    // Reemplazamos entidades HTML por caracteres puros antes de procesar
+    let codigoLimpio = codigoRaw
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>');
+
+    // REGLA ESPECIAL: Unir operadores separados por espacios o saltos de línea
+    // Esto hace que "a + \n +" sea interpretado como "a ++"
+    if (fase === 'lexico') {
+        // Busca un operador (+, -, =, !, <, >) seguido de espacios/vacio y otro operador igual o compatible
+        codigoLimpio = codigoLimpio.replace(/([\+\-\=\!\>\<])\s+([\+\-\=\!\>\<])/g, '$1$2');
+    }
+
+    // 2. LLAMADA AL BACKEND (PYTHON)
+    const res = await eel.ejecutar_fase_compilador(fase, codigoLimpio)();
+
+    // Mapeo de IDs de la interfaz
+    const tabMap = { 
+        'lexico': 'tab-lexico', 
+        'sintactico': 'tab-sintactico', 
+        'semantico': 'tab-semantico', 
+        'intermedio': 'tab-intermedio' 
+    };
+    const errorTabMap = { 
+        'lexico': 'err-lexico', 
+        'sintactico': 'err-sintactico', 
+        'semantico': 'err-semantico', 
+        'intermedio': 'err-intermedio' 
+    };
+
+    // 3. RENDERIZAR RESULTADOS
     const displayArea = document.getElementById(tabMap[fase]);
+    
     if (fase === 'lexico' && Array.isArray(res.resultado)) {
-        displayArea.innerHTML = generarTablaTokens(res.resultado); // Función auxiliar para la tabla
+        // Generar la tabla si es análisis léxico
+        let tablaHtml = `
+            <table class="tabla-tokens">
+                <thead>
+                    <tr>
+                        <th>Token</th>
+                        <th>Lexema</th>
+                        <th>Línea</th>
+                        <th>Columna</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${res.resultado.map(t => `
+                        <tr>
+                            <td><span class="badge-${t.tipo}">${t.tipo}</span></td>
+                            <td>${t.valor}</td>
+                            <td>${t.linea}</td>
+                            <td>${t.columna}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
+        displayArea.innerHTML = tablaHtml;
     } else {
+        // Para otras fases, mostrar texto plano
         displayArea.innerText = res.resultado || "";
     }
 
-    // 2. Manejo de Errores
+    // 4. GESTIÓN DE ERRORES
     const errorArea = document.getElementById(errorTabMap[fase]);
-    errorArea.innerText = ""; // Limpiar errores previos
+    errorArea.innerText = ""; // Limpiar panel de errores anterior
 
     if (res.errores && res.errores.length > 0) {
-        // Formatear y mostrar errores
-        errorArea.innerText = res.errores.map(e => `Línea ${e.linea}, Col ${e.columna}: ${e.desc}`).join('\n');
-        errorArea.style.color = "#f44336"; // Rojo para errores
+        // Formatear lista de errores
+        const mensajesError = res.errores.map(e => 
+            `Error en Línea ${e.linea}, Columna ${e.columna}: ${e.desc}`
+        ).join('\n');
         
-        // Cambiar automáticamente a la pestaña de errores correspondiente
-        verTabInferior(null, errorTabMap[fase]); 
+        errorArea.innerText = mensajesError;
+        errorArea.style.color = "#f44336"; // Rojo
+        
+        // Cambiar automáticamente a la pestaña de errores
+        verTabInferior(null, errorTabMap[fase]);
     } else {
-        errorArea.innerText = "0 errores detectados.";
-        errorArea.style.color = "#4ec9b0"; // Verde para éxito
+        errorArea.innerText = "0 errores detectados. Compilación exitosa.";
+        errorArea.style.color = "#4ec9b0"; // Verde esmeralda
     }
-    
-    verTab(null, tabMap[fase]); // Mostrar pestaña de resultados
+
+    // Mostrar la pestaña de resultados activa
+    verTab(null, tabMap[fase]);
 }
 
 // Función auxiliar para mantener limpio el código
