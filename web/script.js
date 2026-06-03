@@ -197,91 +197,77 @@ async function compilar(fase) {
     const editor = document.getElementById('editor');
     let codigoRaw = document.getElementById('editor').value;
 
-    // 1. LIMPIEZA Y NORMALIZACIÓN
-    // Reemplazamos entidades HTML por caracteres puros antes de procesar
     let codigoLimpio = codigoRaw
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>');
 
-    // REGLA ESPECIAL: Unir operadores separados por espacios o saltos de línea
-    // Esto hace que "a + \n +" sea interpretado como "a ++"
-    if (fase === 'lexico') {
-        // Busca un operador (+, -, =, !, <, >) seguido de espacios/vacio y otro operador igual o compatible
-        codigoLimpio = codigoLimpio.replace(/([\+\-\=\!\>\<])\s+([\+\-\=\!\>\<])/g, '$1$2');
-    }
+    // ELIMINAMOS EL IF. Ahora esta limpieza aplica para léxico y sintáctico
+    codigoLimpio = codigoLimpio.replace(/([\+\-\=\!\>\<])\s+([\+\-\=\!\>\<])/g, '$1$2');
 
-    // 2. LLAMADA AL BACKEND (PYTHON)
     const res = await eel.ejecutar_fase_compilador(fase, codigoLimpio)();
 
-    // Mapeo de IDs de la interfaz
     const tabMap = { 
-        'lexico': 'tab-lexico', 
-        'sintactico': 'tab-sintactico', 
-        'semantico': 'tab-semantico', 
-        'intermedio': 'tab-intermedio' 
+        'lexico': 'tab-lexico', 'sintactico': 'tab-sintactico', 
+        'semantico': 'tab-semantico', 'intermedio': 'tab-intermedio' 
     };
     const errorTabMap = { 
-        'lexico': 'err-lexico', 
-        'sintactico': 'err-sintactico', 
-        'semantico': 'err-semantico', 
-        'intermedio': 'err-intermedio' 
+        'lexico': 'err-lexico', 'sintactico': 'err-sintactico', 
+        'semantico': 'err-semantico', 'intermedio': 'err-intermedio' 
     };
 
-    // 3. RENDERIZAR RESULTADOS
     const displayArea = document.getElementById(tabMap[fase]);
     
+    // NUEVA LÓGICA DE RENDERIZADO PARA EL ÁRBOL
     if (fase === 'lexico' && Array.isArray(res.resultado)) {
-        // Generar la tabla si es análisis léxico
-        let tablaHtml = `
-            <table class="tabla-tokens">
-                <thead>
-                    <tr>
-                        <th>Token</th>
-                        <th>Lexema</th>
-                        <th>Línea</th>
-                        <th>Columna</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${res.resultado.map(t => `
-                        <tr>
-                            <td><span class="badge-${t.tipo}">${t.tipo}</span></td>
-                            <td>${t.valor}</td>
-                            <td>${t.linea}</td>
-                            <td>${t.columna}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>`;
-        displayArea.innerHTML = tablaHtml;
+        displayArea.innerHTML = generarTablaTokens(res.resultado);
+    } else if (fase === 'sintactico' && typeof res.resultado === 'object') {
+        displayArea.innerHTML = `<div class="ast-container">${renderizarArbol(res.resultado)}</div>`;
     } else {
-        // Para otras fases, mostrar texto plano
         displayArea.innerText = res.resultado || "";
     }
 
-    // 4. GESTIÓN DE ERRORES
     const errorArea = document.getElementById(errorTabMap[fase]);
-    errorArea.innerText = ""; // Limpiar panel de errores anterior
+    errorArea.innerText = ""; 
 
     if (res.errores && res.errores.length > 0) {
-        // Formatear lista de errores
         const mensajesError = res.errores.map(e => 
             `Error en Línea ${e.linea}, Columna ${e.columna}: ${e.desc}`
         ).join('\n');
         
         errorArea.innerText = mensajesError;
-        errorArea.style.color = "#f44336"; // Rojo
-        
-        // Cambiar automáticamente a la pestaña de errores
+        errorArea.style.color = "#f44336"; 
         verTabInferior(null, errorTabMap[fase]);
     } else {
         errorArea.innerText = "0 errores detectados. Compilación exitosa.";
-        errorArea.style.color = "#4ec9b0"; // Verde esmeralda
+        errorArea.style.color = "#4ec9b0"; 
     }
 
-    // Mostrar la pestaña de resultados activa
     verTab(null, tabMap[fase]);
+}
+
+// NUEVA FUNCIÓN QUE DEBES PEGAR JUSTO AQUÍ DEBAJO
+function renderizarArbol(nodo) {
+    if (!nodo) return "";
+    
+    if (!nodo.children || nodo.children.length === 0) {
+        return `<div class="tree-leaf">
+                    <span class="tree-name">${nodo.name}:</span> 
+                    <span class="tree-value">${nodo.value || ''}</span>
+                </div>`;
+    }
+    
+    let htmlHijos = nodo.children.map(renderizarArbol).join('');
+    
+    return `<details open class="tree-node">
+                <summary>
+                    <span class="tree-name">${nodo.name}</span>
+                    ${nodo.value ? `<span class="tree-value">${nodo.value}</span>` : ''}
+                </summary>
+                <div class="tree-children">
+                    ${htmlHijos}
+                </div>
+            </details>`;
 }
 
 // Función auxiliar para mantener limpio el código

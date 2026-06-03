@@ -604,3 +604,78 @@ button[onclick="guardarComo()"] svg {
     color: #e06c75;
     border: 1px solid #e06c75;
 }
+
+/* --- ESTILOS DEL ÁRBOL SINTÁCTICO --- */
+.ast-container {
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    padding: 10px;
+    color: #e5e7eb;
+}
+
+.tree-node {
+    margin-left: 10px;
+    border-left: 1px dashed var(--border);
+    padding-left: 10px;
+    margin-bottom: 2px;
+}
+
+.tree-node > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.tree-node > summary::-webkit-details-marker {
+    display: none; 
+}
+
+.tree-node > summary::before {
+    content: '▼';
+    color: var(--accent);
+    font-size: 10px;
+    margin-right: 8px;
+    transition: transform 0.2s;
+}
+
+.tree-node[open] > summary::before {
+    transform: rotate(0deg);
+}
+
+.tree-node:not([open]) > summary::before {
+    transform: rotate(-90deg);
+}
+
+.tree-node > summary:hover {
+    background: rgba(123, 97, 255, 0.1);
+}
+
+.tree-children {
+    padding-left: 10px;
+}
+
+.tree-leaf {
+    padding: 4px 4px 4px 24px;
+    position: relative;
+}
+
+.tree-leaf::before {
+    content: '└─';
+    position: absolute;
+    left: 4px;
+    color: var(--border);
+}
+
+.tree-name {
+    color: #61afef;
+    font-weight: bold;
+}
+
+.tree-value {
+    color: #d19a66;
+    margin-left: 5px;
+}

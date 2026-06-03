@@ -2,23 +2,22 @@ import re
 
 # lexer.py - Definición de tokens estrictamente según el PDF
 TOKENS_RULES = [
-    ('COMENTARIO_MULT', r'/\*[\s\S]*?\*/'),          # Estilo C 
-    ('COMENTARIO_LINEA', r'//.*'),                   # Estilo C 
-    ('NUMERO_REAL',   r'\d+\.\d+'),                  # Color 1 [cite: 11]
-    ('NUMERO_ERROR',  r'\d+\.'),                     # Manejo de error léxico 
-    ('NUMERO_ENTERO', r'\d+'),                       # Color 1 [cite: 11]
-    # Lista exacta de 12 palabras reservadas [cite: 13]
-    ('RESERVADA',     r'\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b'), 
-    ('OPERADOR_ARIT', r'\+\+|--|\+|\-|\*|/|%|\^'),   # Color 5 [cite: 14]
-    ('OPERADOR_REL',  r'<=|>=|!=|==|<|>'),           # Color 6 [cite: 15]
-    # Solo acepta parejas para and/or 
-    ('OPERADOR_LOG',  r'&&|\|\||!'),                 # Color 6 
-    ('ASIGNACION',    r'='),                         # Asignación [cite: 19]
-    # Símbolos oficiales únicamente [cite: 18]
+    ('COMENTARIO_MULT', r'/\*[\s\S]*?\*/'),          
+    ('COMENTARIO_LINEA', r'//.*'),                   
+    ('NUMERO_REAL',   r'\d+\.\d+'),                  
+    ('NUMERO_ERROR',  r'\d+\.'),                     
+    ('NUMERO_ENTERO', r'\d+'),                       
+    ('CADENA',        r'"[^"]*"'),                   # NUEVO: Para soportar "Hola"
+    # NUEVO: Se agregó 'then' a las reservadas para la prueba
+    ('RESERVADA',     r'\b(if|else|end|do|while|switch|case|int|float|main|cin|cout|then)\b'), 
+    ('OPERADOR_ARIT', r'\+\+|--|\+|\-|\*|/|%|\^'),   
+    ('OPERADOR_REL',  r'<=|>=|!=|==|<|>'),           
+    ('OPERADOR_LOG',  r'&&|\|\||!'),                 
+    ('ASIGNACION',    r'='),                         
     ('SIMBOLO',       r'\(|\)|\{|\}|,|;|"|\''),      
-    ('ID',            r'[a-zA-Z][a-zA-Z0-9]*'),      # Color 2 
-    ('ESPACIO',       r'[ \t]+'),                    # Ignorar [cite: 21]
-    ('NUEVA_LINEA',   r'\n'),                        # Contador 
+    ('ID',            r'[a-zA-Z][a-zA-Z0-9]*'),      
+    ('ESPACIO',       r'[ \t]+'),                    
+    ('NUEVA_LINEA',   r'\n'),                        
 ]
 
 def analizar(codigo):
@@ -35,27 +34,23 @@ def analizar(codigo):
         valor = match.group(tipo)
         columna = match.start() - pos_linea_inicio + 1
         
-        # 1. Detectar caracteres no reconocidos antes del token actual
         if match.start() > pos_actual:
             basura = codigo[pos_actual:match.start()].replace('\n', '').strip()
             if basura:
                 errores_lista.append({
-                    "linea": linea, 
-                    "columna": pos_actual - pos_linea_inicio + 1,
+                    "linea": linea, "columna": pos_actual - pos_linea_inicio + 1,
                     "desc": f"Caracter no reconocido: '{basura}'"
                 })
 
-        # 2. Procesar el token según su tipo
         if tipo == 'NUEVA_LINEA':
             linea += 1
             pos_linea_inicio = match.end()
         elif tipo == 'NUMERO_ERROR':
             errores_lista.append({
-                "linea": linea, "columna": columna,
-                "desc": f"Número real incompleto: '{valor}'"
+                "linea": linea, "columna": columna, "desc": f"Número real incompleto: '{valor}'"
             })
         elif tipo in ['COMENTARIO_MULT', 'COMENTARIO_LINEA', 'ESPACIO']:
-            pass # No se agregan a la lista de tokens
+            pass 
         else:
             tokens_lista.append({
                 "tipo": tipo, "valor": valor, "linea": linea, "columna": columna
@@ -63,13 +58,11 @@ def analizar(codigo):
         
         pos_actual = match.end()
 
-    # Verificar basura al final
     if pos_actual < len(codigo):
         final = codigo[pos_actual:].replace('\n', '').strip()
         if final:
             errores_lista.append({
-                "linea": linea, "columna": pos_actual - pos_linea_inicio + 1,
-                "desc": f"Error léxico al final: '{final}'"
+                "linea": linea, "columna": pos_actual - pos_linea_inicio + 1, "desc": f"Error léxico al final: '{final}'"
             })
 
     return tokens_lista, errores_lista

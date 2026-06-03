@@ -1,6 +1,7 @@
 import json
 import sys
 import lexer
+import parser_sintactico
 
 def main():
     if len(sys.argv) < 3: return
@@ -15,12 +16,19 @@ def main():
             codigo = f.read()
             
         if fase == "lexico":
-            # Llamamos al lexer y desempaquetamos tokens y errores [cite: 28, 29]
             tokens, errores = lexer.analizar(codigo)
             respuesta["resultado"] = tokens
             respuesta["errores"] = errores
+            
         elif fase == "sintactico":
-            respuesta["resultado"] = "Próxima fase..."
+            tokens, errores_lexicos = lexer.analizar(codigo)
+            
+            parser = parser_sintactico.Parser(tokens)
+            arbol, errores_sintacticos = parser.parse()
+            
+            respuesta["resultado"] = arbol
+            respuesta["errores"] = errores_sintacticos
+            
         elif fase == "semantico":
             respuesta["resultado"] = "Validaciones Semánticas..."
         elif fase == "intermedio":
