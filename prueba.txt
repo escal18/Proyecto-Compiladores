@@ -1,5 +1,4 @@
-main sumar 3.14+main)if{ 32 algo
-34.34 34.34
+main
 {
 int x,y,z;
 float a,b,c;
@@ -17,16 +16,14 @@ y=14.54;
 if(2>3)then
         y=a+3;
   else
-      if(4>2 && )then
+      if(4>2 && x==8)then
              b=3.2;
        else
            b=5.0;
        end;
        y=y+1;
 end;
-a+
-
-+;
+a++;
 c--;
 x=3+4;
 do
@@ -36,16 +33,9 @@ do
    mas=36/7; 
    };
 
- until(y=
-
-
-=
-
-
-
-5);
+ until(y==5);
  while(y==0){
     cin mas;
-    cout x;
+    cout x-9+3;
 };
 }

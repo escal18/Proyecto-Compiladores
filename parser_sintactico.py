@@ -37,7 +37,7 @@ class Parser:
         while self.pos < len(self.tokens):
             tk = self.peek()
             
-            if tk['valor'] in ['{', 'int', 'float', 'if', 'do', 'while', 'cin', 'cout'] or tk['tipo'] == 'ID':
+            if tk['valor'] in ['{', 'main', 'int', 'float', 'if', 'do', 'while', 'cin', 'cout'] or tk['tipo'] == 'ID':
                 stmt = self.parse_statement()
                 if stmt: raiz["children"].append(stmt)
             else:
@@ -50,6 +50,7 @@ class Parser:
         tk = self.peek()
         if not tk: return None
         
+        if tk['valor'] == 'main': return self.parse_main()
         if tk['valor'] == '{': return self.parse_bloque_principal()
         if tk['valor'] in ['int', 'float']: return self.parse_declaracion()
         if tk['valor'] == 'if': return self.parse_if()
@@ -71,6 +72,17 @@ class Parser:
         self.consume('SIMBOLO', '}')
         return nodo
 
+    def parse_main(self):
+     
+        self.consume('RESERVADA', 'main')
+        
+        
+        if self.peek('SIMBOLO', '{'):
+            bloque = self.parse_bloque_principal()
+            return {"name": "Función Principal (main)", "children": [bloque]}
+        else:
+            self.reportar_error("Se esperaba un bloque '{' después de 'main'")
+            return {"name": "Función Principal (main)", "children": [{"name": "Error: Falta bloque"}]}
     def parse_declaracion(self):
         tipo_tk = self.consume('RESERVADA')
         nodo = {"name": f"Declaración ({tipo_tk['valor']})", "children": []}
@@ -121,9 +133,17 @@ class Parser:
 
     def parse_io(self):
         io_tk = self.consume('RESERVADA')
-        val_tk = self.consume() 
-        self.consume('SIMBOLO', ';')
-        return {"name": f"I/O ({io_tk['valor']})", "children": [{"name": "Destino", "value": val_tk['valor'] if val_tk else "?"}]}
+        
+        # En lugar de consumir un solo token, evaluamos toda la expresión matemática
+        expr = self.parse_expresion() 
+        
+        if not self.consume('SIMBOLO', ';'):
+            self.reportar_error(f"Falta ';' al final de la instrucción {io_tk['valor']}")
+            
+        return {
+            "name": f"I/O ({io_tk['valor']})", 
+            "children": [expr if expr else {"name": "Error: Expresión faltante"}]
+        }
 
     def parse_if(self):
         self.consume('RESERVADA', 'if')
