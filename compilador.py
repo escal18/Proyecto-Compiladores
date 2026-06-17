@@ -15,7 +15,6 @@ def main():
             codigo = f.read()
             
         if fase == "lexico":
-            # Llamamos al lexer y desempaquetamos tokens y errores [cite: 28, 29]
             tokens, errores = lexer.analizar(codigo)
             respuesta["resultado"] = tokens
             respuesta["errores"] = errores

@@ -327,7 +327,7 @@ button[onclick="guardarComo()"] svg {
     display: none;
     padding: 15px 5px 15px 15px;
     font-family: 'Consolas', monospace;
-    overflow-y: scroll; 
+    overflow-y: scroll;
     overflow-x: hidden;
     flex: 1;
     font-size: 13px;
@@ -402,7 +402,6 @@ button[onclick="guardarComo()"] svg {
     scrollbar-color: #9381ff #0b1220;
 }
 
-
 *::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -427,7 +426,6 @@ button[onclick="guardarComo()"] svg {
     background: #0b1220;
 }
 
-/* Capa superior: El TEXTAREA donde escribes */
 #editor {
     position: absolute;
     top: 0;
@@ -438,12 +436,9 @@ button[onclick="guardarComo()"] svg {
     padding: 10px;
     margin: 0;
     z-index: 2;
-    /* Siempre arriba para recibir los clics */
     background: transparent;
     color: transparent;
-    /* El texto real es invisible */
     caret-color: white;
-    /* El cursor sí se ve */
     font-family: 'Consolas', monospace;
     font-size: 14px;
     line-height: var(--lh);
@@ -456,7 +451,6 @@ button[onclick="guardarComo()"] svg {
     box-sizing: border-box;
 }
 
-/* Capa inferior: El DIV que muestra los colores */
 #highlighting-content {
     position: absolute;
     top: 0;
@@ -467,7 +461,6 @@ button[onclick="guardarComo()"] svg {
     padding: 10px;
     margin: 0;
     z-index: 1;
-    /* Debajo del textarea */
     color: var(--color-editor-text);
     font-family: 'Consolas', monospace;
     font-size: 14px;
@@ -475,52 +468,36 @@ button[onclick="guardarComo()"] svg {
     tab-size: 4;
     white-space: pre;
     overflow: hidden;
-    /* El scroll lo controla el editor */
     pointer-events: none;
-    /* No estorba al mouse */
     box-sizing: border-box;
 }
 
-#highlighting-content {
-    color: var(--color-editor-text);
-    z-index: 1;
-    overflow: hidden;
-    pointer-events: none;
-}
-
-/* Colores según el PDF  */
 .token-c1 {
     color: #d19a66;
 }
 
-/* Números */
 .token-c2 {
     color: #61afef;
 }
 
-/* Identificadores */
 .token-c3 {
     color: #7f848e;
     font-style: italic;
 }
 
-/* Comentarios */
 .token-c4 {
     color: #c678dd;
     font-weight: bold;
 }
 
-/* Reservadas */
 .token-c5 {
     color: #56b6c2;
 }
 
-/* Aritméticos */
 .token-c6 {
     color: #e06c75;
 }
 
-/* Estilos para la tabla de tokens */
 .tabla-tokens {
     width: 100%;
     margin: 0;
@@ -530,7 +507,6 @@ button[onclick="guardarComo()"] svg {
 }
 
 .tabla-tokens th {
-    /* Cambiado de sticky a static para que no se quede fija */
     position: static;
     background: var(--bg-tabs);
     color: var(--accent);
@@ -545,10 +521,9 @@ button[onclick="guardarComo()"] svg {
     color: #e5e7eb;
 }
 
-/* Asegura que la tabla ocupe el 100% y los badges se vean bien */
 .tabla-tokens td span {
     display: inline-block;
-    min-width: 80px; /* Tamaño mínimo para que todos los badges se vean iguales */
+    min-width: 80px;
     text-align: center;
 }
 
@@ -556,7 +531,6 @@ button[onclick="guardarComo()"] svg {
     background: rgba(123, 97, 255, 0.05);
 }
 
-/* Badges de colores para los tipos de tokens */
 [class^="badge-"] {
     padding: 2px 6px;
     border-radius: 4px;
@@ -598,9 +572,8 @@ button[onclick="guardarComo()"] svg {
     border: 1px solid #abb2bf;
 }
 
-/* Badge específico para ASIGNACION */
 .badge-ASIGNACION {
-    background: #e06c7533; /* Un tono rojizo suave para diferenciarlo */
+    background: #e06c7533;
     color: #e06c75;
     border: 1px solid #e06c75;
 }

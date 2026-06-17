@@ -111,61 +111,49 @@ function actualizarPestañas() {
     });
 }
 
-// En script.js
 function actualizarEditor() {
     const editor = document.getElementById('editor');
     const highlightingContent = document.getElementById('highlighting-content');
     const lineNumbers = document.getElementById('line-numbers');
     const highlight = document.getElementById('line-highlight');
     const archivo = archivosAbiertos.find(a => a.id === idActivo);
-    
-    // Obtener el texto PURO del textarea
-    const texto = editor.value; 
-    
-    // 1. Aplicar Resaltado de Sintaxis SOLO a la capa visual
-    // Pasamos el texto puro, la función se encarga de los colores
-    highlightingContent.innerHTML = resaltarCodigo(texto); 
+    const texto = editor.value;
 
-    // 2. Lógica de cursor y líneas
+    highlightingContent.innerHTML = resaltarCodigo(texto);
+
     const pos = editor.selectionStart;
     const lineasSub = texto.substring(0, pos).split(/\r?\n/);
     const filaActual = lineasSub.length;
 
     if (archivo) {
-        archivo.contenido = texto; // Guardar el texto puro, sin "&gt;"
+        archivo.contenido = texto;
         archivo.modificado = archivo.contenido !== archivo.original;
         actualizarPestañas();
         highlight.style.display = 'block';
         highlight.style.top = `${(filaActual - 1) * 24 + 10}px`;
     }
 
-    // Actualizar números de línea
     const totalLineas = texto.split(/\r?\n/).length;
     let numerosHtml = "";
     for (let i = 1; i <= totalLineas; i++) {
         numerosHtml += `<div class="${i === filaActual ? 'active-line' : ''}">${i}</div>`;
     }
     lineNumbers.innerHTML = numerosHtml;
-    
-    // Actualizar barra de estado
+
     const columnaActual = lineasSub[filaActual - 1].length;
-    document.getElementById('posicion-cursor').innerText = 
+    document.getElementById('posicion-cursor').innerText =
         `Archivo: ${archivo ? archivo.nombre : 'Sin título'} | Línea: ${filaActual} | Columna: ${columnaActual}`;
-    
+
     sincronizarScroll();
 }
 
 function resaltarCodigo(codigo) {
-    // 1. Limpieza de entidades para que el análisis sea real
     let codigoLimpio = codigo.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 
-    // 2. Regex Maestra actualizada (sin & o | individuales)
     const regexMaster = /(?<c3>\/\*[\s\S]*?\*\/|\/\/.*)|(?<c4>\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b)|(?<c1>\d+\.\d+|\d+)|(?<c5>\+\+|--|\+|\-|\*|\/|%|\^)|(?<c6><=|>=|!=|==|<|>|&&|\|\||!)|(?<c2>[a-zA-Z][a-zA-Z0-9]*)|(?<error>[&|]+|[^ \t\n\w])/g;
 
     return codigoLimpio.replace(regexMaster, (match, ...args) => {
         const groups = args[args.length - 1];
-        
-        // Escapamos para el HTML final
         let safe = match.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
         if (groups.c3) return `<span class="token-c3">${safe}</span>`;
@@ -174,9 +162,8 @@ function resaltarCodigo(codigo) {
         if (groups.c5) return `<span class="token-c5">${safe}</span>`;
         if (groups.c6) return `<span class="token-c6">${safe}</span>`;
         if (groups.c2) return `<span class="token-c2">${safe}</span>`;
-        
-        // Si cae aquí, es un error (como un & solo)
-        return `<span class="token-error">${safe}</span>`; 
+
+        return `<span class="token-error">${safe}</span>`;
     }).replace(/\n/g, "<br>");
 }
 
@@ -184,55 +171,45 @@ function sincronizarScroll() {
     const editor = document.getElementById('editor');
     const highlighting = document.getElementById('highlighting-content');
     const lineNumbers = document.getElementById('line-numbers');
-    
+
     highlighting.scrollTop = editor.scrollTop;
     highlighting.scrollLeft = editor.scrollLeft;
     lineNumbers.scrollTop = editor.scrollTop;
-    
+
     document.getElementById('line-highlight').style.transform = `translateY(-${editor.scrollTop}px)`;
 }
 
-// En script.js
 async function compilar(fase) {
     const editor = document.getElementById('editor');
     let codigoRaw = document.getElementById('editor').value;
 
-    // 1. LIMPIEZA Y NORMALIZACIÓN
-    // Reemplazamos entidades HTML por caracteres puros antes de procesar
     let codigoLimpio = codigoRaw
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>');
 
-    // REGLA ESPECIAL: Unir operadores separados por espacios o saltos de línea
-    // Esto hace que "a + \n +" sea interpretado como "a ++"
     if (fase === 'lexico') {
-        // Busca un operador (+, -, =, !, <, >) seguido de espacios/vacio y otro operador igual o compatible
         codigoLimpio = codigoLimpio.replace(/([\+\-\=\!\>\<])\s+([\+\-\=\!\>\<])/g, '$1$2');
     }
 
-    // 2. LLAMADA AL BACKEND (PYTHON)
     const res = await eel.ejecutar_fase_compilador(fase, codigoLimpio)();
 
-    // Mapeo de IDs de la interfaz
-    const tabMap = { 
-        'lexico': 'tab-lexico', 
-        'sintactico': 'tab-sintactico', 
-        'semantico': 'tab-semantico', 
-        'intermedio': 'tab-intermedio' 
+    const tabMap = {
+        'lexico': 'tab-lexico',
+        'sintactico': 'tab-sintactico',
+        'semantico': 'tab-semantico',
+        'intermedio': 'tab-intermedio'
     };
-    const errorTabMap = { 
-        'lexico': 'err-lexico', 
-        'sintactico': 'err-sintactico', 
-        'semantico': 'err-semantico', 
-        'intermedio': 'err-intermedio' 
+    const errorTabMap = {
+        'lexico': 'err-lexico',
+        'sintactico': 'err-sintactico',
+        'semantico': 'err-semantico',
+        'intermedio': 'err-intermedio'
     };
 
-    // 3. RENDERIZAR RESULTADOS
     const displayArea = document.getElementById(tabMap[fase]);
-    
+
     if (fase === 'lexico' && Array.isArray(res.resultado)) {
-        // Generar la tabla si es análisis léxico
         let tablaHtml = `
             <table class="tabla-tokens">
                 <thead>
@@ -256,52 +233,26 @@ async function compilar(fase) {
             </table>`;
         displayArea.innerHTML = tablaHtml;
     } else {
-        // Para otras fases, mostrar texto plano
         displayArea.innerText = res.resultado || "";
     }
 
-    // 4. GESTIÓN DE ERRORES
     const errorArea = document.getElementById(errorTabMap[fase]);
-    errorArea.innerText = ""; // Limpiar panel de errores anterior
+    errorArea.innerText = "";
 
     if (res.errores && res.errores.length > 0) {
-        // Formatear lista de errores
-        const mensajesError = res.errores.map(e => 
+        const mensajesError = res.errores.map(e =>
             `Error en Línea ${e.linea}, Columna ${e.columna}: ${e.desc}`
         ).join('\n');
-        
+
         errorArea.innerText = mensajesError;
-        errorArea.style.color = "#f44336"; // Rojo
-        
-        // Cambiar automáticamente a la pestaña de errores
+        errorArea.style.color = "#f44336";
         verTabInferior(null, errorTabMap[fase]);
     } else {
         errorArea.innerText = "0 errores detectados. Compilación exitosa.";
-        errorArea.style.color = "#4ec9b0"; // Verde esmeralda
+        errorArea.style.color = "#4ec9b0";
     }
 
-    // Mostrar la pestaña de resultados activa
     verTab(null, tabMap[fase]);
-}
-
-// Función auxiliar para mantener limpio el código
-function generarTablaTokens(tokens) {
-    return `
-        <table class="tabla-tokens">
-            <thead>
-                <tr><th>Token</th><th>Lexema</th><th>Línea</th><th>Col</th></tr>
-            </thead>
-            <tbody>
-                ${tokens.map(t => `
-                    <tr>
-                        <td><span class="badge-${t.tipo}">${t.tipo}</span></td>
-                        <td>${t.valor}</td>
-                        <td>${t.linea}</td>
-                        <td>${t.columna}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>`;
 }
 
 async function ejecutar() {
@@ -313,39 +264,33 @@ async function ejecutar() {
 }
 
 function verTab(evt, name) {
-    const panel = document.getElementById("right-panel"); // results-pane (arriba derecha)
+    const panel = document.getElementById("right-panel");
     if (!panel) return;
 
-    // 1) contenido
     panel.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
     const content = panel.querySelector("#" + name);
     if (content) content.classList.add("active");
 
-    // 2) botones (pestañas)
     panel.querySelectorAll(".tabs .tab-link").forEach(b => b.classList.remove("active"));
 
-    // si viene event, activamos el botón clickeado
     if (evt && evt.currentTarget) {
         evt.currentTarget.classList.add("active");
         return;
     }
 
-    // si NO viene event (ej: compilar()), buscamos el botón que abre ese tab
     const btn = Array.from(panel.querySelectorAll(".tabs .tab-link"))
         .find(b => (b.getAttribute("onclick") || "").includes(`'${name}'`));
     if (btn) btn.classList.add("active");
 }
 
 function verTabInferior(evt, name) {
-    const panel = document.querySelector(".bottom-pane"); // panel inferior
+    const panel = document.querySelector(".bottom-pane");
     if (!panel) return;
 
-    // 1) contenido
     panel.querySelectorAll(".tab-content-inf").forEach(c => c.classList.remove("active"));
     const content = panel.querySelector("#" + name);
     if (content) content.classList.add("active");
 
-    // 2) botones
     panel.querySelectorAll(".tabs .tab-link").forEach(b => b.classList.remove("active"));
 
     if (evt && evt.currentTarget) {
@@ -380,12 +325,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const resizer = document.getElementById('dragMe');
     const leftSide = document.getElementById('left-panel');
     let x = 0; let leftWidth = 0;
+
     const mouseDownHandler = function (e) {
         x = e.clientX;
         leftWidth = leftSide.getBoundingClientRect().width;
         document.addEventListener('mousemove', mouseMoveHandler);
         document.addEventListener('mouseup', mouseUpHandler);
     };
+
     const mouseMoveHandler = function (e) {
         const dx = e.clientX - x;
         const containerWidth = resizer.parentNode.getBoundingClientRect().width;
@@ -393,9 +340,11 @@ document.addEventListener('DOMContentLoaded', function () {
         leftSide.style.flex = `0 0 ${newLeftWidth}%`;
         actualizarEditor();
     };
+
     const mouseUpHandler = function () {
         document.removeEventListener('mousemove', mouseMoveHandler);
         document.removeEventListener('mouseup', mouseUpHandler);
     };
+
     resizer.addEventListener('mousedown', mouseDownHandler);
 });
