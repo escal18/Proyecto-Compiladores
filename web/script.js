@@ -188,28 +188,33 @@ async function compilar(fase) {
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>');
 
+    // REGLA ESPECIAL: Unir operadores separados por espacios o saltos de línea
+    // Esto hace que "a + \n +" sea interpretado como "a ++"
     if (fase === 'lexico') {
+        // Busca un operador (+, -, =, !, <, >) seguido de espacios/vacio y otro operador igual o compatible
         codigoLimpio = codigoLimpio.replace(/([\+\-\=\!\>\<])\s+([\+\-\=\!\>\<])/g, '$1$2');
     }
 
     const res = await eel.ejecutar_fase_compilador(fase, codigoLimpio)();
 
-    const tabMap = {
-        'lexico': 'tab-lexico',
-        'sintactico': 'tab-sintactico',
-        'semantico': 'tab-semantico',
-        'intermedio': 'tab-intermedio'
+    // Mapeo de IDs de la interfaz
+    const tabMap = { 
+        'lexico': 'tab-lexico', 
+        'sintactico': 'tab-sintactico', 
+        'semantico': 'tab-semantico', 
+        'intermedio': 'tab-intermedio' 
     };
-    const errorTabMap = {
-        'lexico': 'err-lexico',
-        'sintactico': 'err-sintactico',
-        'semantico': 'err-semantico',
-        'intermedio': 'err-intermedio'
+    const errorTabMap = { 
+        'lexico': 'err-lexico', 
+        'sintactico': 'err-sintactico', 
+        'semantico': 'err-semantico', 
+        'intermedio': 'err-intermedio' 
     };
 
     const displayArea = document.getElementById(tabMap[fase]);
-
+    
     if (fase === 'lexico' && Array.isArray(res.resultado)) {
+        // Generar la tabla si es análisis léxico
         let tablaHtml = `
             <table class="tabla-tokens">
                 <thead>
@@ -237,22 +242,45 @@ async function compilar(fase) {
     }
 
     const errorArea = document.getElementById(errorTabMap[fase]);
-    errorArea.innerText = "";
+    errorArea.innerText = ""; // Limpiar panel de errores anterior
 
     if (res.errores && res.errores.length > 0) {
-        const mensajesError = res.errores.map(e =>
+        // Formatear lista de errores
+        const mensajesError = res.errores.map(e => 
             `Error en Línea ${e.linea}, Columna ${e.columna}: ${e.desc}`
         ).join('\n');
 
         errorArea.innerText = mensajesError;
-        errorArea.style.color = "#f44336";
+        errorArea.style.color = "#f44336"; // Rojo
+        
+        // Cambiar automáticamente a la pestaña de errores
         verTabInferior(null, errorTabMap[fase]);
     } else {
         errorArea.innerText = "0 errores detectados. Compilación exitosa.";
-        errorArea.style.color = "#4ec9b0";
+        errorArea.style.color = "#4ec9b0"; // Verde esmeralda
     }
 
     verTab(null, tabMap[fase]);
+}
+
+// Función auxiliar para mantener limpio el código
+function generarTablaTokens(tokens) {
+    return `
+        <table class="tabla-tokens">
+            <thead>
+                <tr><th>Token</th><th>Lexema</th><th>Línea</th><th>Col</th></tr>
+            </thead>
+            <tbody>
+                ${tokens.map(t => `
+                    <tr>
+                        <td><span class="badge-${t.tipo}">${t.tipo}</span></td>
+                        <td>${t.valor}</td>
+                        <td>${t.linea}</td>
+                        <td>${t.columna}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>`;
 }
 
 async function ejecutar() {
