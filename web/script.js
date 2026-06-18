@@ -211,32 +211,14 @@ async function compilar(fase) {
         'intermedio': 'err-intermedio' 
     };
 
+   // (AQUÍ ESTÁ EL CAMBIO PARA EL ÁRBOL)
     const displayArea = document.getElementById(tabMap[fase]);
     
     if (fase === 'lexico' && Array.isArray(res.resultado)) {
-        // Generar la tabla si es análisis léxico
-        let tablaHtml = `
-            <table class="tabla-tokens">
-                <thead>
-                    <tr>
-                        <th>Token</th>
-                        <th>Lexema</th>
-                        <th>Línea</th>
-                        <th>Columna</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${res.resultado.map(t => `
-                        <tr>
-                            <td><span class="badge-${t.tipo}">${t.tipo}</span></td>
-                            <td>${t.valor}</td>
-                            <td>${t.linea}</td>
-                            <td>${t.columna}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>`;
-        displayArea.innerHTML = tablaHtml;
+        displayArea.innerHTML = generarTablaTokens(res.resultado);
+    } else if (fase === 'sintactico' && typeof res.resultado === 'object') {
+        // Esta es la línea que evita el [object Object]
+        displayArea.innerHTML = `<div class="ast-container">${renderizarArbol(res.resultado)}</div>`;
     } else {
         displayArea.innerText = res.resultado || "";
     }
@@ -376,3 +358,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     resizer.addEventListener('mousedown', mouseDownHandler);
 });
+
+// Función para dibujar el Árbol Sintáctico Abstracto (AST)
+function renderizarArbol(nodo) {
+    if (!nodo) return "";
+    
+    if (!nodo.children || nodo.children.length === 0) {
+        return `<div class="tree-leaf">
+                    <span class="tree-name">${nodo.name}:</span> 
+                    <span class="tree-value">${nodo.value || ''}</span>
+                </div>`;
+    }
+    
+    let htmlHijos = nodo.children.map(renderizarArbol).join('');
+    
+    return `<details open class="tree-node">
+                <summary>
+                    <span class="tree-name">${nodo.name}</span>
+                    ${nodo.value ? `<span class="tree-value">${nodo.value}</span>` : ''}
+                </summary>
+                <div class="tree-children">
+                    ${htmlHijos}
+                </div>
+            </details>`;
+}

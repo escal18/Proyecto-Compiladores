@@ -7,7 +7,7 @@ TOKENS_RULES = [
     ('NUMERO_ERROR',  r'\d+\.'),                     # Manejo de error léxico 
     ('NUMERO_ENTERO', r'\d+'),                       # Color 1 [cite: 11]
     # Lista exacta de 12 palabras reservadas [cite: 13]
-    ('RESERVADA',     r'\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b'), 
+    ('RESERVADA',     r'\b(if|else|end|do|while|switch|case|int|float|main|cin|cout|then)\b'), 
     ('OPERADOR_ARIT', r'\+\+|--|\+|\-|\*|/|%|\^'),   # Color 5 [cite: 14]
     ('OPERADOR_REL',  r'<=|>=|!=|==|<|>'),           # Color 6 [cite: 15]
     # Solo acepta parejas para and/or 
