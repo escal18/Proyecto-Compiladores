@@ -1,6 +1,7 @@
 import re
 
 TOKENS_RULES = [
+<<<<<<< HEAD
     ('COMENTARIO_MULT', r'/\*[\s\S]*?\*/'),
     ('COMENTARIO_SIN_CIERRE', r'/\*[\s\S]*\Z'),
     ('COMENTARIO_LINEA', r'//[^\r\n]*'),
@@ -19,6 +20,25 @@ TOKENS_RULES = [
     ('ESPACIO', r'[^\S\r\n]+'),
     ('NUEVA_LINEA', r'\r\n|\r|\n'),
     ('ERROR', r'[\s\S]'),
+=======
+    ('COMENTARIO_MULT', r'/\*[\s\S]*?\*/'),          # Estilo C 
+    ('COMENTARIO_LINEA', r'//.*'),                   # Estilo C 
+    ('NUMERO_REAL',   r'\d+\.\d+'),                  # Color 1 [cite: 11]
+    ('NUMERO_ERROR',  r'\d+\.'),                     # Manejo de error léxico 
+    ('NUMERO_ENTERO', r'\d+'),                       # Color 1 [cite: 11]
+    # Lista exacta de 12 palabras reservadas [cite: 13]
+    ('RESERVADA',     r'\b(if|else|end|do|while|switch|case|int|float|main|cin|cout|then)\b'), 
+    ('OPERADOR_ARIT', r'\+\+|--|\+|\-|\*|/|%|\^'),   # Color 5 [cite: 14]
+    ('OPERADOR_REL',  r'<=|>=|!=|==|<|>'),           # Color 6 [cite: 15]
+    # Solo acepta parejas para and/or 
+    ('OPERADOR_LOG',  r'&&|\|\||!'),                 # Color 6 
+    ('ASIGNACION',    r'='),                         # Asignación [cite: 19]
+    # Símbolos oficiales únicamente [cite: 18]
+    ('SIMBOLO',       r'\(|\)|\{|\}|,|;|"|\''),      
+    ('ID',            r'[a-zA-Z][a-zA-Z0-9]*'),      
+    ('ESPACIO',       r'[ \t]+'),                    
+    ('NUEVA_LINEA',   r'\n'),                        
+>>>>>>> aca605603ed2f2c91b9b8812b36106c963bf9e70
 ]
 REGEX_MASTER = re.compile('|'.join(f'(?P<{nombre}>{patron})' for nombre, patron in TOKENS_RULES))
 

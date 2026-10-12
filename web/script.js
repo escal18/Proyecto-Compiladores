@@ -345,6 +345,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // Función para dibujar el Árbol Sintáctico Abstracto (AST)
 function renderizarArbol(nodo) {
     if (!nodo) return "";
+<<<<<<< HEAD
 
     if (!nodo.children || nodo.children.length === 0) {
         return `<div class="tree-leaf">
@@ -359,9 +360,29 @@ function renderizarArbol(nodo) {
                 <summary>
                     <span class="tree-name">${escaparHtml(nodo.name)}</span>
                     ${nodo.value ? `<span class="tree-value">${escaparHtml(nodo.value)}</span>` : ''}
+=======
+    
+    if (!nodo.children || nodo.children.length === 0) {
+        return `<div class="tree-leaf">
+                    <span class="tree-name">${nodo.name}:</span> 
+                    <span class="tree-value">${nodo.value || ''}</span>
+                </div>`;
+    }
+    
+    let htmlHijos = nodo.children.map(renderizarArbol).join('');
+    
+    return `<details open class="tree-node">
+                <summary>
+                    <span class="tree-name">${nodo.name}</span>
+                    ${nodo.value ? `<span class="tree-value">${nodo.value}</span>` : ''}
+>>>>>>> aca605603ed2f2c91b9b8812b36106c963bf9e70
                 </summary>
                 <div class="tree-children">
                     ${htmlHijos}
                 </div>
             </details>`;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> aca605603ed2f2c91b9b8812b36106c963bf9e70
