@@ -45,5 +45,33 @@ vm.runInContext('verTab = () => {}; verTabInferior = () => {};', context);
     assert.match(tabla, /&lt;<\/td>/);
     const html = context.renderizarArbol({name: 'Op (<)', children: [{name: 'Valor', value: '<script>'}]});
     assert.ok(!html.includes('<script>'));
-    console.log('OK: fuente sin alteraciones, errores separados, resaltado y HTML escapado.');
+    const original = {name: 'Programa', children: [{name: 'Valor', value: 'false'}]};
+    const anotado = {name: 'Programa', tipo: 'void', children: [
+        {name: 'Valor', value: 'false', tipo: 'bool', constante: true, valor_constante: false,
+         dtype: 'bool', direccion: 0, valido: true}
+    ]};
+    respuesta = {
+        resultado: anotado, ast_original: original, arbol_anotado: anotado,
+        errores: [], errores_lexicos: [], errores_sintacticos: [], errores_semanticos: [],
+        semantico_ejecutado: true, semantico_valido: true, traza_semantica: [{accion: 'insertar'}],
+        tabla_simbolos: [{id: 1, nombre: '<variable>', tipo: 'bool', ambito: 'main',
+            lineas: [2, 3], direccion: 0, tamano: 1}]
+    };
+    await context.compilar('semantico');
+    assert.match(element('tab-semantico').innerHTML, /valor constante: false/);
+    assert.match(element('tab-semantico').innerHTML, /dtype heredado: bool/);
+    assert.match(element('tab-semantico').innerHTML, /Recorrido semántico/);
+    assert.match(element('tab-hash').innerHTML, /&lt;variable&gt;/);
+    assert.match(element('tab-hash').innerHTML, /2, 3/);
+    assert.ok(!element('tab-sintactico').innerHTML.includes('dtype heredado'));
+    respuesta.semantico_ejecutado = false;
+    respuesta.semantico_valido = false;
+    respuesta.resultado = 'Corrige la sintaxis';
+    respuesta.tabla_simbolos = [];
+    respuesta.errores_sintacticos = [{linea: 1, columna: 2, desc: 'Falta cierre'}];
+    await context.compilar('semantico');
+    assert.match(element('err-semantico').innerText, /no ejecutado/);
+    assert.match(element('tab-hash').innerHTML, /No hay símbolos/);
+    assert.equal(element('tab-semantico').innerText, 'Corrige la sintaxis');
+    console.log('OK: fuente, errores por fase, AST original/anotado, constantes, tabla y bloqueo semántico.');
 })().catch(error => {console.error(error); process.exitCode = 1;});

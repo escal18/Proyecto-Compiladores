@@ -200,7 +200,7 @@ async function compilar(fase) {
 
     if (fase === 'lexico' && Array.isArray(res.resultado)) {
         displayArea.innerHTML = generarTablaTokens(res.resultado);
-    } else if (fase === 'sintactico' && typeof res.resultado === 'object') {
+    } else if (['sintactico', 'semantico'].includes(fase) && res.resultado && typeof res.resultado === 'object') {
         // Esta es la línea que evita el [object Object]
         displayArea.innerHTML = `<div class="ast-container">${renderizarArbol(res.resultado)}</div>`;
     } else {
@@ -214,18 +214,53 @@ async function compilar(fase) {
         ).join('\n') : mensaje;
         area.style.color = errores.length ? '#f44336' : '#4ec9b0';
     };
-    if (fase === 'sintactico' && Array.isArray(res.errores_lexicos)) {
+    if (['sintactico', 'semantico'].includes(fase) && Array.isArray(res.errores_lexicos)) {
         mostrarErrores('err-lexico', res.errores_lexicos);
         mostrarErrores('err-sintactico', res.errores_sintacticos || []);
+        if (fase === 'semantico') {
+            mostrarErrores('err-semantico', res.errores_semanticos || [],
+                res.semantico_ejecutado ? '0 errores semánticos detectados.'
+                    : 'Análisis semántico no ejecutado: corrige los errores de las fases anteriores.');
+            document.getElementById('tab-hash').innerHTML = generarTablaSimbolos(res.tabla_simbolos || []);
+            if (res.ast_original) {
+                document.getElementById('tab-sintactico').innerHTML =
+                    '<div class="ast-container">' + renderizarArbol(res.ast_original) + '</div>';
+            }
+            if (res.semantico_ejecutado) {
+                const traza = '<details><summary>Recorrido semántico (' +
+                    res.traza_semantica.length + ' pasos)</summary><pre>' +
+                    escaparHtml(JSON.stringify(res.traza_semantica, null, 2)) + '</pre></details>';
+                displayArea.innerHTML = '<p>' +
+                    (res.semantico_valido ? 'Programa semánticamente válido.' :
+                        res.errores_semanticos.length + ' errores semánticos detectados.') +
+                    '</p><div class="ast-container">' + renderizarArbol(res.arbol_anotado) + '</div>' + traza;
+            }
+        }
         if (res.errores_lexicos.length) verTabInferior(null, 'err-lexico');
         else if (res.errores_sintacticos.length) verTabInferior(null, 'err-sintactico');
+        else if (res.errores_semanticos?.length) verTabInferior(null, 'err-semantico');
+        if (res.errores_sistema?.length) {
+            mostrarErrores('err-semantico', res.errores_sistema);
+            verTabInferior(null, 'err-semantico');
+        }
     } else {
         mostrarErrores(errorTabMap[fase], res.errores || [],
             res.implementado === false ? 'Esta fase todavía no está implementada.' : '0 errores detectados.');
         if (res.errores?.length) verTabInferior(null, errorTabMap[fase]);
     }
 
+    displayArea.scrollTop = 0;
     verTab(null, tabMap[fase]);
+}
+
+async function exportarSemantico() {
+    const codigo = document.getElementById('editor').value;
+    const resultado = await eel.exportar_semantico_py(codigo)();
+    if (!resultado) return;
+    const panel = document.getElementById('res-ejecucion');
+    panel.innerText = resultado.error || ('Evidencias de fase 3 guardadas en: ' +
+        resultado.ruta + '\nErrores semánticos registrados: ' + resultado.errores_semanticos);
+    verTabInferior(null, 'res-ejecucion');
 }
 
 // Función auxiliar para mantener limpio el código
@@ -342,47 +377,42 @@ document.addEventListener('DOMContentLoaded', function () {
     resizer.addEventListener('mousedown', mouseDownHandler);
 });
 
-// Función para dibujar el Árbol Sintáctico Abstracto (AST)
+
+function generarTablaSimbolos(simbolos) {
+    if (!simbolos.length) return '<p>No hay símbolos registrados.</p>';
+    return '<table class="tabla-tokens"><thead><tr>' +
+        ['ID', 'Nombre', 'Tipo', 'Ámbito', 'Líneas', 'Desplazamiento', 'Bytes'].map(
+            titulo => '<th>' + titulo + '</th>').join('') + '</tr></thead><tbody>' +
+        simbolos.map(s => '<tr>' + [
+            s.id, s.nombre, s.tipo, s.ambito, s.lineas.join(', '), s.direccion, s.tamano
+        ].map(valor => '<td>' + escaparHtml(valor) + '</td>').join('') + '</tr>').join('') +
+        '</tbody></table>';
+}
+
+function anotacionesSemanticas(nodo) {
+    const atributos = [];
+    if (nodo.dtype) atributos.push('dtype heredado: ' + nodo.dtype);
+    if (nodo.tipo) atributos.push('tipo: ' + nodo.tipo);
+    if (nodo.constante) atributos.push('valor constante: ' + JSON.stringify(nodo.valor_constante));
+    if (nodo.conversion) atributos.push('conversión: ' + nodo.conversion.de + ' → ' + nodo.conversion.a);
+    if (nodo.ambito) atributos.push('ámbito: ' + nodo.ambito);
+    if (nodo.direccion !== undefined) atributos.push('desplazamiento: ' + nodo.direccion);
+    if (nodo.tipo_esperado) atributos.push('tipo esperado: ' + nodo.tipo_esperado);
+    if (nodo.valido === false) atributos.push('error');
+    return atributos.length ? '<small class="semantic-attrs">' +
+        escaparHtml(atributos.join(' | ')) + '</small>' : '';
+}
+
 function renderizarArbol(nodo) {
-    if (!nodo) return "";
-<<<<<<< HEAD
-
-    if (!nodo.children || nodo.children.length === 0) {
-        return `<div class="tree-leaf">
-                    <span class="tree-name">${escaparHtml(nodo.name)}:</span>
-                    <span class="tree-value">${escaparHtml(nodo.value ?? '')}</span>
-                </div>`;
+    if (!nodo) return '';
+    const nombre = '<span class="tree-name">' + escaparHtml(nodo.name) + '</span>';
+    const valor = nodo.value !== undefined
+        ? ' <span class="tree-value">' + escaparHtml(nodo.value) + '</span>' : '';
+    const atributos = anotacionesSemanticas(nodo);
+    if (!nodo.children?.length) {
+        return '<div class="tree-leaf">' + nombre + valor + atributos + '</div>';
     }
-
-    let htmlHijos = nodo.children.map(renderizarArbol).join('');
-
-    return `<details open class="tree-node">
-                <summary>
-                    <span class="tree-name">${escaparHtml(nodo.name)}</span>
-                    ${nodo.value ? `<span class="tree-value">${escaparHtml(nodo.value)}</span>` : ''}
-=======
-    
-    if (!nodo.children || nodo.children.length === 0) {
-        return `<div class="tree-leaf">
-                    <span class="tree-name">${nodo.name}:</span> 
-                    <span class="tree-value">${nodo.value || ''}</span>
-                </div>`;
-    }
-    
-    let htmlHijos = nodo.children.map(renderizarArbol).join('');
-    
-    return `<details open class="tree-node">
-                <summary>
-                    <span class="tree-name">${nodo.name}</span>
-                    ${nodo.value ? `<span class="tree-value">${nodo.value}</span>` : ''}
->>>>>>> aca605603ed2f2c91b9b8812b36106c963bf9e70
-                </summary>
-                <div class="tree-children">
-                    ${htmlHijos}
-                </div>
-            </details>`;
-<<<<<<< HEAD
+    return '<details open class="tree-node"><summary>' + nombre + valor + atributos +
+        '</summary><div class="tree-children">' +
+        nodo.children.map(renderizarArbol).join('') + '</div></details>';
 }
-=======
-}
->>>>>>> aca605603ed2f2c91b9b8812b36106c963bf9e70

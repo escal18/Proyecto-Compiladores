@@ -6,6 +6,7 @@ import sys
 import tempfile
 from pathlib import Path
 from archivos_fuente import leer_fuente
+from compilador import exportar_evidencias
 from tkinter import filedialog, Tk
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -54,6 +55,26 @@ def ejecutar_fase_compilador(fase, codigo):
         return json.loads(proceso.stdout)
     except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
         return {"resultado": "", "errores": [{"linea": "N/A", "columna": "N/A", "fase": "sistema", "desc": str(error)}]}
+
+@eel.expose
+def exportar_semantico_py(codigo):
+    respuesta = ejecutar_fase_compilador('semantico', codigo)
+    if not respuesta.get('semantico_ejecutado'):
+        return {'error': 'Corrige los errores previos antes de exportar las evidencias.', 'respuesta': respuesta}
+    root = Tk()
+    root.withdraw()
+    root.attributes('-topmost', True)
+    try:
+        carpeta = filedialog.askdirectory(title='Selecciona la carpeta para las evidencias de fase 3')
+    finally:
+        root.destroy()
+    if not carpeta:
+        return None
+    try:
+        exportar_evidencias(respuesta, carpeta)
+        return {'ruta': carpeta, 'errores_semanticos': len(respuesta['errores_semanticos'])}
+    except (OSError, ValueError) as error:
+        return {'error': str(error)}
 
 def seleccionar_ruta(tipo="guardar"):
     root = Tk()

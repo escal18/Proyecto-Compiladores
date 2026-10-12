@@ -601,6 +601,7 @@ button[onclick="guardarComo()"] svg {
     transition: background 0.2s;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .tree-node > summary::-webkit-details-marker {
@@ -651,4 +652,23 @@ button[onclick="guardarComo()"] svg {
 .tree-value {
     color: #d19a66;
     margin-left: 5px;
+}
+
+.semantic-attrs {
+    display: block;
+    margin: 3px 0 5px 12px;
+    color: #d7ba7d;
+    font-family: monospace;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    flex-basis: 100%;
+}
+
+.tree-name, .tree-value {
+    flex-shrink: 0;
+}
+
+#tab-semantico pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }

@@ -37,16 +37,23 @@ y copiar el AST sin depender de los textos usados para mostrarlo en el IDE.
 
 Los errores léxicos y sintácticos se devuelven en listas separadas y también en
 `errores` para compatibilidad. Los comentarios multilínea actualizan las ubicaciones.
-Las fases futuras siguen pendientes y se muestran así en la interfaz.
+La fase semántica está implementada: consulte FASE3_SEMANTICA.md para sus reglas,
+ámbitos, atributos y evidencias. Código intermedio y ejecución siguen pendientes.
+
+Use **Exportar fase 3** en el IDE para guardar los resultados de la fuente
+actual. La carpeta entrega_fase3 contiene el reporte PDF, capturas del IDE real
+y los datos de la fuente principal. Complete integrantes.txt con los nombres
+y matrículas del equipo antes de entregar.
 
 `suma`, `mas` y las asignaciones de reales a enteros se conservan en la prueba:
-no son errores sintácticos; deben evaluarse en la fase semántica.
+no son errores sintácticos; ahora se reportan en la fase semántica.
 
 ## Validar
 
 ```text
 python -m unittest -v
 node test_frontend.cjs
+python compilador.py semantico prueba.txt --exportar evidencias_fase3
 ```
 
 Las pruebas cubren codificaciones y abrir/guardar, el subprocess real desde otra
