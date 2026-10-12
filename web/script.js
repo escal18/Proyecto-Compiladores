@@ -147,24 +147,22 @@ function actualizarEditor() {
     sincronizarScroll();
 }
 
+function escaparHtml(texto) {
+    return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function resaltarCodigo(codigo) {
-    let codigoLimpio = codigo.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-
-    const regexMaster = /(?<c3>\/\*[\s\S]*?\*\/|\/\/.*)|(?<c4>\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b)|(?<c1>\d+\.\d+|\d+)|(?<c5>\+\+|--|\+|\-|\*|\/|%|\^)|(?<c6><=|>=|!=|==|<|>|&&|\|\||!)|(?<c2>[a-zA-Z][a-zA-Z0-9]*)|(?<error>[&|]+|[^ \t\n\w])/g;
-
-    return codigoLimpio.replace(regexMaster, (match, ...args) => {
+    const regexMaster = /(?<c3>\/\*[\s\S]*?\*\/|\/\/[^\r\n]*)|(?<c4>\b(if|else|end|do|until|while|switch|case|int|float|bool|main|cin|cout|then|true|false)\b)|(?<c1>[0-9]+\.[0-9]+|[0-9]+)|(?<c5>\+\+|--|[+*/%^-])|(?<c6>>>|<<|<=|>=|!=|==|<|>|&&|\|\||!)|(?<c2>[a-zA-Z][a-zA-Z0-9]*)|(?<simbolo>[(){};,="'])|(?<espacio>\s+)|(?<error>[\s\S])/g;
+    return codigo.replace(regexMaster, (match, ...args) => {
         const groups = args[args.length - 1];
-        let safe = match.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-        if (groups.c3) return `<span class="token-c3">${safe}</span>`;
-        if (groups.c4) return `<span class="token-c4">${safe}</span>`;
-        if (groups.c1) return `<span class="token-c1">${safe}</span>`;
-        if (groups.c5) return `<span class="token-c5">${safe}</span>`;
-        if (groups.c6) return `<span class="token-c6">${safe}</span>`;
-        if (groups.c2) return `<span class="token-c2">${safe}</span>`;
-
+        const safe = escaparHtml(match);
+        for (const tipo of ['c3', 'c4', 'c1', 'c5', 'c6', 'c2']) {
+            if (groups[tipo]) return `<span class="token-${tipo}">${safe}</span>`;
+        }
+        if (groups.simbolo || groups.espacio) return safe;
         return `<span class="token-error">${safe}</span>`;
-    }).replace(/\n/g, "<br>");
+    }).replace(/\r\n|\r|\n/g, '<br>');
 }
 
 function sincronizarScroll() {
@@ -180,84 +178,51 @@ function sincronizarScroll() {
 }
 
 async function compilar(fase) {
-    const editor = document.getElementById('editor');
-    let codigoRaw = document.getElementById('editor').value;
-
-    let codigoLimpio = codigoRaw
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>');
-
-    // REGLA ESPECIAL: Unir operadores separados por espacios o saltos de línea
-    // Esto hace que "a + \n +" sea interpretado como "a ++"
-    if (fase === 'lexico') {
-        // Busca un operador (+, -, =, !, <, >) seguido de espacios/vacio y otro operador igual o compatible
-        codigoLimpio = codigoLimpio.replace(/([\+\-\=\!\>\<])\s+([\+\-\=\!\>\<])/g, '$1$2');
-    }
-
-    const res = await eel.ejecutar_fase_compilador(fase, codigoLimpio)();
+    const codigo = document.getElementById('editor').value;
+    const res = await eel.ejecutar_fase_compilador(fase, codigo)();
 
     // Mapeo de IDs de la interfaz
-    const tabMap = { 
-        'lexico': 'tab-lexico', 
-        'sintactico': 'tab-sintactico', 
-        'semantico': 'tab-semantico', 
-        'intermedio': 'tab-intermedio' 
+    const tabMap = {
+        'lexico': 'tab-lexico',
+        'sintactico': 'tab-sintactico',
+        'semantico': 'tab-semantico',
+        'intermedio': 'tab-intermedio'
     };
-    const errorTabMap = { 
-        'lexico': 'err-lexico', 
-        'sintactico': 'err-sintactico', 
-        'semantico': 'err-semantico', 
-        'intermedio': 'err-intermedio' 
+    const errorTabMap = {
+        'lexico': 'err-lexico',
+        'sintactico': 'err-sintactico',
+        'semantico': 'err-semantico',
+        'intermedio': 'err-intermedio'
     };
 
+   // (AQUÍ ESTÁ EL CAMBIO PARA EL ÁRBOL)
     const displayArea = document.getElementById(tabMap[fase]);
-    
+
     if (fase === 'lexico' && Array.isArray(res.resultado)) {
-        // Generar la tabla si es análisis léxico
-        let tablaHtml = `
-            <table class="tabla-tokens">
-                <thead>
-                    <tr>
-                        <th>Token</th>
-                        <th>Lexema</th>
-                        <th>Línea</th>
-                        <th>Columna</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${res.resultado.map(t => `
-                        <tr>
-                            <td><span class="badge-${t.tipo}">${t.tipo}</span></td>
-                            <td>${t.valor}</td>
-                            <td>${t.linea}</td>
-                            <td>${t.columna}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>`;
-        displayArea.innerHTML = tablaHtml;
+        displayArea.innerHTML = generarTablaTokens(res.resultado);
+    } else if (fase === 'sintactico' && typeof res.resultado === 'object') {
+        // Esta es la línea que evita el [object Object]
+        displayArea.innerHTML = `<div class="ast-container">${renderizarArbol(res.resultado)}</div>`;
     } else {
         displayArea.innerText = res.resultado || "";
     }
 
-    const errorArea = document.getElementById(errorTabMap[fase]);
-    errorArea.innerText = ""; // Limpiar panel de errores anterior
-
-    if (res.errores && res.errores.length > 0) {
-        // Formatear lista de errores
-        const mensajesError = res.errores.map(e => 
-            `Error en Línea ${e.linea}, Columna ${e.columna}: ${e.desc}`
-        ).join('\n');
-
-        errorArea.innerText = mensajesError;
-        errorArea.style.color = "#f44336"; // Rojo
-        
-        // Cambiar automáticamente a la pestaña de errores
-        verTabInferior(null, errorTabMap[fase]);
+    const mostrarErrores = (id, errores, mensaje = '0 errores detectados.') => {
+        const area = document.getElementById(id);
+        area.innerText = errores.length ? errores.map(e =>
+            `Error en Línea ${e.linea}, Columna ${e.columna ?? 'N/A'}: ${e.desc}`
+        ).join('\n') : mensaje;
+        area.style.color = errores.length ? '#f44336' : '#4ec9b0';
+    };
+    if (fase === 'sintactico' && Array.isArray(res.errores_lexicos)) {
+        mostrarErrores('err-lexico', res.errores_lexicos);
+        mostrarErrores('err-sintactico', res.errores_sintacticos || []);
+        if (res.errores_lexicos.length) verTabInferior(null, 'err-lexico');
+        else if (res.errores_sintacticos.length) verTabInferior(null, 'err-sintactico');
     } else {
-        errorArea.innerText = "0 errores detectados. Compilación exitosa.";
-        errorArea.style.color = "#4ec9b0"; // Verde esmeralda
+        mostrarErrores(errorTabMap[fase], res.errores || [],
+            res.implementado === false ? 'Esta fase todavía no está implementada.' : '0 errores detectados.');
+        if (res.errores?.length) verTabInferior(null, errorTabMap[fase]);
     }
 
     verTab(null, tabMap[fase]);
@@ -274,7 +239,7 @@ function generarTablaTokens(tokens) {
                 ${tokens.map(t => `
                     <tr>
                         <td><span class="badge-${t.tipo}">${t.tipo}</span></td>
-                        <td>${t.valor}</td>
+                        <td>${escaparHtml(t.valor)}</td>
                         <td>${t.linea}</td>
                         <td>${t.columna}</td>
                     </tr>
@@ -376,3 +341,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     resizer.addEventListener('mousedown', mouseDownHandler);
 });
+
+// Función para dibujar el Árbol Sintáctico Abstracto (AST)
+function renderizarArbol(nodo) {
+    if (!nodo) return "";
+
+    if (!nodo.children || nodo.children.length === 0) {
+        return `<div class="tree-leaf">
+                    <span class="tree-name">${escaparHtml(nodo.name)}:</span>
+                    <span class="tree-value">${escaparHtml(nodo.value ?? '')}</span>
+                </div>`;
+    }
+
+    let htmlHijos = nodo.children.map(renderizarArbol).join('');
+
+    return `<details open class="tree-node">
+                <summary>
+                    <span class="tree-name">${escaparHtml(nodo.name)}</span>
+                    ${nodo.value ? `<span class="tree-value">${escaparHtml(nodo.value)}</span>` : ''}
+                </summary>
+                <div class="tree-children">
+                    ${htmlHijos}
+                </div>
+            </details>`;
+}

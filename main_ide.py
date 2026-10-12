@@ -2,9 +2,14 @@ import eel
 import subprocess
 import os
 import json
+import sys
+import tempfile
+from pathlib import Path
+from archivos_fuente import leer_fuente
 from tkinter import filedialog, Tk
 
-eel.init('web')
+BASE_DIR = Path(__file__).resolve().parent
+eel.init(str(BASE_DIR / 'web'))
 
 @eel.expose
 def finalizar_programa():
@@ -16,8 +21,7 @@ def abrir_archivo_py():
     ruta = seleccionar_ruta("abrir")
     if ruta:
         try:
-            with open(ruta, "r", encoding="cp1252") as f:
-                contenido = f.read()
+            contenido = leer_fuente(ruta)
             return {"ruta": ruta, "contenido": contenido}
         except Exception as e:
             print(f"Error al abrir archivo: {e}")
@@ -39,17 +43,17 @@ def guardar_archivo_py(contenido, ruta=None):
 
 @eel.expose
 def ejecutar_fase_compilador(fase, codigo):
-    ruta_temp = "temp_fuente.txt"
-    with open(ruta_temp, "w", encoding="utf-8") as f:
-        f.write(codigo)
-    
-    comando = ["python", "compilador.py", fase, ruta_temp]
-    proceso = subprocess.run(comando, capture_output=True, text=True)
-    
     try:
+        with tempfile.TemporaryDirectory(prefix='compilador-') as carpeta:
+            ruta_temp = Path(carpeta) / 'fuente.txt'
+            ruta_temp.write_text(codigo, encoding='utf-8')
+            comando = [sys.executable, str(BASE_DIR / 'compilador.py'), fase, str(ruta_temp)]
+            proceso = subprocess.run(comando, capture_output=True, text=True, encoding='utf-8', timeout=30)
+        if proceso.returncode:
+            raise RuntimeError(proceso.stderr or 'El proceso del compilador falló')
         return json.loads(proceso.stdout)
-    except:
-        return {"resultado": "", "errores": [{"linea": "N/A", "desc": proceso.stderr}]}
+    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
+        return {"resultado": "", "errores": [{"linea": "N/A", "columna": "N/A", "fase": "sistema", "desc": str(error)}]}
 
 def seleccionar_ruta(tipo="guardar"):
     root = Tk()

@@ -1,68 +1,47 @@
 import re
 
 TOKENS_RULES = [
-    ('COMENTARIO_MULT', r'/\*[\s\S]*?\*/'),          # Estilo C 
-    ('COMENTARIO_LINEA', r'//.*'),                   # Estilo C 
-    ('NUMERO_REAL',   r'\d+\.\d+'),                  # Color 1 [cite: 11]
-    ('NUMERO_ERROR',  r'\d+\.'),                     # Manejo de error léxico 
-    ('NUMERO_ENTERO', r'\d+'),                       # Color 1 [cite: 11]
-    # Lista exacta de 12 palabras reservadas [cite: 13]
-    ('RESERVADA',     r'\b(if|else|end|do|while|switch|case|int|float|main|cin|cout)\b'), 
-    ('OPERADOR_ARIT', r'\+\+|--|\+|\-|\*|/|%|\^'),   # Color 5 [cite: 14]
-    ('OPERADOR_REL',  r'<=|>=|!=|==|<|>'),           # Color 6 [cite: 15]
-    # Solo acepta parejas para and/or 
-    ('OPERADOR_LOG',  r'&&|\|\||!'),                 # Color 6 
-    ('ASIGNACION',    r'='),                         # Asignación [cite: 19]
-    # Símbolos oficiales únicamente [cite: 18]
-    ('SIMBOLO',       r'\(|\)|\{|\}|,|;|"|\''),      
-    ('ID',            r'[a-zA-Z][a-zA-Z0-9]*'),      
-    ('ESPACIO',       r'[ \t]+'),                    
-    ('NUEVA_LINEA',   r'\n'),                        
+    ('COMENTARIO_MULT', r'/\*[\s\S]*?\*/'),
+    ('COMENTARIO_SIN_CIERRE', r'/\*[\s\S]*\Z'),
+    ('COMENTARIO_LINEA', r'//[^\r\n]*'),
+    ('NUMERO_REAL', r'[0-9]+\.[0-9]+'),
+    ('NUMERO_ERROR', r'[0-9]+\.'),
+    ('NUMERO_ENTERO', r'[0-9]+'),
+    ('BOOLEANO', r'\b(?:true|false)\b'),
+    ('RESERVADA', r'\b(?:if|else|end|do|until|while|switch|case|int|float|bool|main|cin|cout|then)\b'),
+    ('OPERADOR_IO', r'>>|<<'),
+    ('OPERADOR_ARIT', r'\+\+|--|[+*/%^-]'),
+    ('OPERADOR_REL', r'<=|>=|!=|==|<|>'),
+    ('OPERADOR_LOG', r'&&|\|\||!'),
+    ('ASIGNACION', r'='),
+    ('SIMBOLO', r'''[(){};,"']'''),
+    ('ID', r'[a-zA-Z][a-zA-Z0-9]*'),
+    ('ESPACIO', r'[^\S\r\n]+'),
+    ('NUEVA_LINEA', r'\r\n|\r|\n'),
+    ('ERROR', r'[\s\S]'),
 ]
+REGEX_MASTER = re.compile('|'.join(f'(?P<{nombre}>{patron})' for nombre, patron in TOKENS_RULES))
+
 
 def analizar(codigo):
-    tokens_lista = []
-    errores_lista = []
-    linea = 1
-    pos_linea_inicio = 0
-    pos_actual = 0
-    
-    regex_master = '|'.join(f'(?P<{name}>{pattern})' for name, pattern in TOKENS_RULES)
-    
-    for match in re.finditer(regex_master, codigo):
-        tipo = match.lastgroup
-        valor = match.group(tipo)
-        columna = match.start() - pos_linea_inicio + 1
-        
-        if match.start() > pos_actual:
-            basura = codigo[pos_actual:match.start()].replace('\n', '').strip()
-            if basura:
-                errores_lista.append({
-                    "linea": linea, "columna": pos_actual - pos_linea_inicio + 1,
-                    "desc": f"Caracter no reconocido: '{basura}'"
-                })
-
-        if tipo == 'NUEVA_LINEA':
-            linea += 1
-            pos_linea_inicio = match.end()
-        elif tipo == 'NUMERO_ERROR':
-            errores_lista.append({
-                "linea": linea, "columna": columna, "desc": f"Número real incompleto: '{valor}'"
-            })
-        elif tipo in ['COMENTARIO_MULT', 'COMENTARIO_LINEA', 'ESPACIO']:
-            pass 
+    tokens, errores = [], []
+    linea, columna = 1, 1
+    for match in REGEX_MASTER.finditer(codigo):
+        tipo, valor = match.lastgroup, match.group()
+        ubicacion = {"linea": linea, "columna": columna}
+        if tipo in ('ERROR', 'NUMERO_ERROR', 'COMENTARIO_SIN_CIERRE'):
+            descripcion = {
+                'ERROR': f"Carácter no reconocido: '{valor}'",
+                'NUMERO_ERROR': f"Número real incompleto: '{valor}'",
+                'COMENTARIO_SIN_CIERRE': "Comentario multilínea sin cierre '*/'",
+            }[tipo]
+            errores.append({**ubicacion, "fase": "lexico", "desc": descripcion})
+        elif tipo not in ('COMENTARIO_MULT', 'COMENTARIO_LINEA', 'ESPACIO', 'NUEVA_LINEA'):
+            tokens.append({"tipo": tipo, "valor": valor, **ubicacion})
+        partes = re.split(r'\r\n|\r|\n', valor)
+        if len(partes) > 1:
+            linea += len(partes) - 1
+            columna = len(partes[-1]) + 1
         else:
-            tokens_lista.append({
-                "tipo": tipo, "valor": valor, "linea": linea, "columna": columna
-            })
-        
-        pos_actual = match.end()
-
-    if pos_actual < len(codigo):
-        final = codigo[pos_actual:].replace('\n', '').strip()
-        if final:
-            errores_lista.append({
-                "linea": linea, "columna": pos_actual - pos_linea_inicio + 1, "desc": f"Error léxico al final: '{final}'"
-            })
-
-    return tokens_lista, errores_lista
+            columna += len(valor)
+    return tokens, errores

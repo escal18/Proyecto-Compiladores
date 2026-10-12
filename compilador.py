@@ -2,6 +2,7 @@ import json
 import sys
 import lexer
 import parser_sintactico
+from archivos_fuente import leer_fuente
 
 def main():
     if len(sys.argv) < 3: return
@@ -12,8 +13,7 @@ def main():
     respuesta = {"resultado": "", "errores": [], "tabla_simbolos": []}
 
     try:
-        with open(ruta_archivo, "r", encoding="utf-8") as f:
-            codigo = f.read()
+        codigo = leer_fuente(ruta_archivo)
             
         if fase == "lexico":
             tokens, errores = lexer.analizar(codigo)
@@ -27,14 +27,21 @@ def main():
             arbol, errores_sintacticos = parser.parse()
             
             respuesta["resultado"] = arbol
-            respuesta["errores"] = errores_sintacticos
+            respuesta["errores_lexicos"] = errores_lexicos
+            respuesta["errores_sintacticos"] = errores_sintacticos
+            respuesta["errores"] = errores_lexicos + errores_sintacticos
             
         elif fase == "semantico":
-            respuesta["resultado"] = "Validaciones Semánticas..."
+            respuesta["resultado"] = "Análisis semántico pendiente de implementar."
+            respuesta["implementado"] = False
         elif fase == "intermedio":
-            respuesta["resultado"] = "Código de 3 Direcciones..."
+            respuesta["resultado"] = "Código intermedio pendiente de implementar."
+            respuesta["implementado"] = False
         elif fase == "ejecucion":
-            respuesta["resultado"] = "Salida real del programa..."
+            respuesta["resultado"] = "Ejecución pendiente de implementar."
+            respuesta["implementado"] = False
+        else:
+            respuesta["errores"].append({"linea": "N/A", "columna": "N/A", "desc": f"Fase desconocida: {fase}"})
             
     except Exception as e:
         respuesta["errores"].append({"linea": "N/A", "desc": str(e)})
