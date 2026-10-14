@@ -393,10 +393,9 @@ function anotacionesSemanticas(nodo) {
     const atributos = [];
     if (nodo.dtype) atributos.push('dtype heredado: ' + nodo.dtype);
     if (nodo.tipo) atributos.push('tipo: ' + nodo.tipo);
-    if (nodo.constante) atributos.push('valor constante: ' + JSON.stringify(nodo.valor_constante));
+    if (nodo.constante) atributos.push('valor: ' + JSON.stringify(nodo.valor_constante));
+    else if (nodo.tipo && nodo.tipo !== 'void') atributos.push('valor: no determinado');
     if (nodo.conversion) atributos.push('conversión: ' + nodo.conversion.de + ' → ' + nodo.conversion.a);
-    if (nodo.ambito) atributos.push('ámbito: ' + nodo.ambito);
-    if (nodo.direccion !== undefined) atributos.push('desplazamiento: ' + nodo.direccion);
     if (nodo.tipo_esperado) atributos.push('tipo esperado: ' + nodo.tipo_esperado);
     if (nodo.valido === false) atributos.push('error');
     return atributos.length ? '<small class="semantic-attrs">' +

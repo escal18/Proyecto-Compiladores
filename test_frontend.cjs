@@ -58,7 +58,7 @@ vm.runInContext('verTab = () => {}; verTabInferior = () => {};', context);
             lineas: [2, 3], direccion: 0, tamano: 1}]
     };
     await context.compilar('semantico');
-    assert.match(element('tab-semantico').innerHTML, /valor constante: false/);
+    assert.match(element('tab-semantico').innerHTML, /valor: false/);
     assert.match(element('tab-semantico').innerHTML, /dtype heredado: bool/);
     assert.match(element('tab-semantico').innerHTML, /Recorrido semántico/);
     assert.match(element('tab-hash').innerHTML, /&lt;variable&gt;/);
