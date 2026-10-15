@@ -381,10 +381,13 @@ document.addEventListener('DOMContentLoaded', function () {
 function generarTablaSimbolos(simbolos) {
     if (!simbolos.length) return '<p>No hay símbolos registrados.</p>';
     return '<table class="tabla-tokens"><thead><tr>' +
-        ['ID', 'Nombre', 'Tipo', 'Ámbito', 'Valor', 'Líneas', 'Desplazamiento', 'Bytes'].map(
+        ['ID', 'Nombre', 'Tipo', 'Ámbito', 'Último valor conocido', 'Líneas', 'Desplazamiento', 'Bytes'].map(
             titulo => '<th>' + titulo + '</th>').join('') + '</tr></thead><tbody>' +
         simbolos.map(s => '<tr>' + [
-            s.id, s.nombre, s.tipo, s.ambito, s.constante ? formatearValor(s.valor_constante, s.tipo) : 'no determinado', s.lineas.join(', '), s.direccion, s.tamano
+            s.id, s.nombre, s.tipo, s.ambito,
+            s.constante ? formatearValor(s.valor_constante, s.tipo) :
+                (s.ultimo_valor_conocido !== undefined ? formatearValor(s.ultimo_valor_conocido, s.tipo) : '—'),
+            s.lineas.join(', '), s.direccion, s.tamano
         ].map(valor => '<td>' + escaparHtml(valor) + '</td>').join('') + '</tr>').join('') +
         '</tbody></table>';
 }

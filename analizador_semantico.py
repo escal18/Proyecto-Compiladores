@@ -46,9 +46,9 @@ class AnalizadorSemantico:
         self.evento('entrar_ambito', nodo, ambito=nombre)
 
     def registrar_uso(self, simbolo, nodo, rol):
-        if nodo['linea'] not in simbolo['lineas']:
-            simbolo['lineas'].append(nodo['linea'])
-            simbolo['lineas'].sort()
+        # Una entrada por aparición textual, incluso en la misma línea.
+        simbolo['lineas'].append(nodo['linea'])
+        simbolo['lineas'].sort()
         simbolo['usos'].append({'linea': nodo['linea'], 'columna': nodo['columna'], 'rol': rol})
         nodo.update(tipo=simbolo['tipo'], simbolo_id=simbolo['id'],
                     ambito=simbolo['ambito'], direccion=simbolo['direccion'])
@@ -131,6 +131,13 @@ class AnalizadorSemantico:
         if destino.get('simbolo_id'):
             simbolo = self.simbolos[destino['simbolo_id'] - 1]
             self.copiar_valor(nodo if nodo.get('tipo') != 'error' else {}, simbolo)
+            self.recordar_valor(simbolo)
+
+    @staticmethod
+    def recordar_valor(simbolo):
+        # Historial de presentación: nunca se usa para inferir tipos o valores actuales.
+        if simbolo.get('constante'):
+            simbolo['ultimo_valor_conocido'] = simbolo['valor_constante']
 
     @staticmethod
     def copiar_valor(origen, destino):
@@ -234,6 +241,7 @@ class AnalizadorSemantico:
                 nodo.update(constante=True, valor_constante=hijos[0]['valor_constante'] +
                             (1 if nodo['operador'] == '++' else -1))
                 self.copiar_valor(nodo, self.simbolos[hijos[0]['simbolo_id'] - 1])
+                self.recordar_valor(self.simbolos[hijos[0]['simbolo_id'] - 1])
         elif clase == 'cin':
             simbolo = self.buscar(hijos[0], 'entrada')
             if simbolo:

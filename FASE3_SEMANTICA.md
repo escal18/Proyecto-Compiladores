@@ -80,6 +80,17 @@ Los identificadores deben estar declarados antes de su uso.
 
 Cada símbolo registra ID, nombre, tipo, ámbito, ubicación de declaración, líneas
 de aparición, usos con línea/columna y rol, valor conocido, desplazamiento y tamaño en bytes.
+La columna «Último valor conocido» muestra el valor actual si puede deducirse;
+si deja de conocerse, conserva el último calculado en una operación válida del
+recorrido semántico. Este historial es solo informativo: no se reutiliza para
+calcular expresiones ni representa necesariamente un valor de ejecución.
+Una operación errónea no reemplaza ese historial. Si nunca hubo un valor
+calculable se muestra «—». Los errores se consultan en su panel; disponer de un
+historial no significa por sí solo que haya ocurrido un error.
+La lista de líneas conserva una entrada por aparición textual, incluyendo la
+declaración y los usos: `y = y + 1;` en la línea 9 registra `9, 9`.
+Un incremento `y++;` registra una aparición, con rol de lectura y escritura;
+los recorridos auxiliares para analizar ciclos no añaden apariciones adicionales.
 Los duplicados conservan el símbolo original y registran su aparición; el diagnóstico
 indica la ubicación del duplicado y la línea de la declaración original.
 Se asignan desplazamientos lógicos monotónicos, alineados al tamaño del tipo:

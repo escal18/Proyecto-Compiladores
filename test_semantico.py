@@ -22,6 +22,71 @@ def semantica(codigo):
 
 
 class SemanticoTests(unittest.TestCase):
+    def test_ultimo_valor_conocido_es_historial_no_valor_actual(self):
+        for posterior in ('x=true;', 'cin >> x;', 'while x<5 x=x+1; end'):
+            with self.subTest(posterior=posterior):
+                res = semantica('main { int x=2,y; ' + posterior + ' y=x+1; }')
+                x, y = res['tabla_simbolos']
+                self.assertEqual(x['ultimo_valor_conocido'], 2)
+                self.assertFalse(x['constante'])
+                self.assertNotIn('valor_constante', x)
+                self.assertNotIn('ultimo_valor_conocido', y)
+                self.assertFalse(y['constante'])
+        res = semantica('main { int x=2; x++; x=7; x=false; int c; c--; }')
+        self.assertEqual(res['tabla_simbolos'][0]['ultimo_valor_conocido'], 7)
+        self.assertNotIn('ultimo_valor_conocido', res['tabla_simbolos'][1])
+
+    def test_apariciones_principal_coinciden_con_tokens_incluyendo_repetidas(self):
+        import lexer
+        fuente = leer_fuente(BASE / 'prueba.txt')
+        tokens, errores = lexer.analizar(fuente)
+        self.assertEqual(errores, [])
+        res = semantica(fuente)
+        for simbolo in res['tabla_simbolos']:
+            with self.subTest(nombre=simbolo['nombre']):
+                apariciones = [t for t in tokens
+                               if t['tipo'] == 'ID' and t['valor'] == simbolo['nombre']]
+                self.assertEqual(simbolo['lineas'], [t['linea'] for t in apariciones])
+                self.assertEqual([(u['linea'], u['columna']) for u in simbolo['usos']],
+                                 [(t['linea'], t['columna']) for t in apariciones])
+        y = next(s for s in res['tabla_simbolos'] if s['nombre'] == 'y')
+        self.assertEqual(y['lineas'], [2, 7, 8, 9, 9, 12, 14, 16, 23, 23,
+                                     29, 29, 35, 36])
+
+    def test_apariciones_textuales_no_se_multiplican_por_operaciones_o_ciclos(self):
+        res = semantica('main {\n int x=0; x=x+x; x++; cin >> x; cout << x;\n'
+                        ' while x<3 x=x+1; end\n do x=x+1; until x>5\n}')
+        self.assertEqual(res['errores_semanticos'], [])
+        x = res['tabla_simbolos'][0]
+        self.assertEqual(x['lineas'], [2] * 7 + [3] * 3 + [4] * 3)
+        self.assertEqual([u['rol'] for u in x['usos'][:7]],
+                         ['declaracion', 'escritura', 'lectura', 'lectura',
+                          'lectura_escritura', 'entrada', 'lectura'])
+
+    def test_tabla_interviene_en_ast_tipos_asignaciones_y_visibilidad(self):
+        analizador = analizador_semantico.AnalizadorSemantico()
+        ast, lexicos, sintacticos = analizar(
+            'main {\n float a;\n { int local=2; a=local+1; }\n local=3;\n}')
+        self.assertEqual(lexicos + sintacticos, [])
+        res = analizador.analizar(ast)
+        self.assertEqual([e['codigo'] for e in res['errores_semanticos']], ['NO_DECLARADO'])
+        simbolos = {s['id']: s for s in res['tabla_simbolos']}
+        for nodo in recorrer(res['arbol_anotado']):
+            if 'simbolo_id' in nodo:
+                simbolo = simbolos[nodo['simbolo_id']]
+                self.assertEqual(nodo['tipo'], simbolo['tipo'])
+                self.assertEqual(nodo['direccion'], simbolo['direccion'])
+                self.assertEqual(nodo['ambito'], simbolo['ambito'])
+        traza = res['traza_semantica']
+        self.assertEqual([t['nombre'] for t in traza if t['accion'] == 'insertar'], ['a', 'local'])
+        self.assertTrue(any(t['accion'] == 'buscar' and t.get('nombre') == 'local'
+                            and t.get('encontrado') for t in traza))
+        self.assertTrue(any(t['accion'] == 'buscar' and t.get('nombre') == 'local'
+                            and t.get('encontrado') is False for t in traza))
+        self.assertTrue(any(t['accion'] == 'convertir' and t['destino'] == 'float' for t in traza))
+        self.assertTrue(any(t['accion'] == 'asignar' and t['destino'] == 'a' for t in traza))
+        self.assertEqual(analizador.ambitos, [])
+
     def test_muestra_six_errores_y_tabla_real(self):
         res = semantica(leer_fuente(BASE / 'prueba.txt'))
         self.assertEqual([s['nombre'] for s in res['tabla_simbolos']], list('xyzabc'))

@@ -60,14 +60,24 @@ vm.runInContext('verTab = () => {}; verTabInferior = () => {};', context);
         errores: [], errores_lexicos: [], errores_sintacticos: [], errores_semanticos: [],
         semantico_ejecutado: true, semantico_valido: true, traza_semantica: [{accion: 'insertar'}],
         tabla_simbolos: [{id: 1, nombre: '<variable>', tipo: 'bool', ambito: 'main',
-            lineas: [2, 3], direccion: 0, tamano: 1}]
+            lineas: [2, 3, 3], direccion: 0, tamano: 1}]
     };
     await context.compilar('semantico');
     assert.match(element('tab-semantico').innerHTML, /valor: false/);
     assert.match(element('tab-semantico').innerHTML, /dtype heredado: bool/);
     assert.match(element('tab-semantico').innerHTML, /Recorrido semántico/);
     assert.match(element('tab-hash').innerHTML, /&lt;variable&gt;/);
-    assert.match(element('tab-hash').innerHTML, /2, 3/);
+    assert.match(element('tab-hash').innerHTML, /2, 3, 3/);
+    const historial = context.generarTablaSimbolos([
+        {id: 1, nombre: 'x', tipo: 'int', ambito: 'main', constante: false,
+         ultimo_valor_conocido: 0, lineas: [2, 3], direccion: 0, tamano: 4},
+        {id: 2, nombre: 'c', tipo: 'float', ambito: 'main', constante: false,
+         lineas: [2], direccion: 8, tamano: 8}
+    ]);
+    assert.match(historial, /Último valor conocido/);
+    assert.match(historial, /<td>0<\/td>/);
+    assert.match(historial, /<td>—<\/td>/);
+    assert.ok(!historial.includes('no determinado'));
     assert.ok(!element('tab-sintactico').innerHTML.includes('dtype heredado'));
     respuesta.semantico_ejecutado = false;
     respuesta.semantico_valido = false;
