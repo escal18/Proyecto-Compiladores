@@ -37,6 +37,11 @@ vm.runInContext('verTab = () => {}; verTabInferior = () => {};', context);
     respuesta = {resultado: 'Pendiente', errores: [], implementado: false};
     await context.compilar('semantico');
     assert.match(element('err-semantico').innerText, /no está implementada/);
+    const multilinea = context.resaltarCodigo('main {\n\nint x;\n}\n');
+    assert.equal(multilinea.split('\n').length, 5);
+    assert.ok(!multilinea.includes('<br>'));
+    assert.match(context.anotacionesSemanticas({tipo: 'int', tipo_efectivo: 'float',
+        constante: true, valor_constante: 2}), /tipo: float.*valor: 2\.0/);
     const resaltado = context.resaltarCodigo('bool ok; if true then cin >> x; cout << x; end');
     assert.ok(!resaltado.includes('token-error'));
     assert.match(resaltado, /&gt;&gt;/);

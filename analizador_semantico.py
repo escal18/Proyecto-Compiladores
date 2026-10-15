@@ -12,6 +12,7 @@ class AnalizadorSemantico:
         self.errores = []
         self.ambitos = []
         self.simbolos = []
+        self.declarados = {}
         self.traza = []
         self.desplazamiento = 0
         self.secuencia = 0
@@ -32,6 +33,7 @@ class AnalizadorSemantico:
         self.errores.append({'fase': 'semantico', 'codigo': codigo,
                             'linea': nodo['linea'], 'columna': nodo['columna'], 'desc': desc})
         nodo['tipo'] = 'error'
+        self.copiar_valor({}, nodo)
         nodo['valido'] = False
         self.evento('error', nodo, codigo=codigo, descripcion=desc)
 
@@ -68,8 +70,12 @@ class AnalizadorSemantico:
         self.evento('heredar', nodo, atributo='dtype', valor=tipo)
         ambito = self.ambitos[-1]
         nombre = nodo['value']
-        if nombre in ambito['simbolos']:
-            self.error(nodo, 'DUPLICADO', f"Declaración duplicada de '{nombre}' en {ambito['nombre']}.")
+        if nombre in self.declarados:
+            original = self.declarados[nombre]
+            self.registrar_uso(original, nodo, 'declaracion_duplicada')
+            self.error(nodo, 'DUPLICADO',
+                       f"Declaración duplicada de '{nombre}' en {ambito['nombre']}; "
+                       f"declarada originalmente en línea {original['linea_declaracion']}.")
             return None
         tamano = TAMANOS[tipo]
         self.desplazamiento = (self.desplazamiento + tamano - 1) // tamano * tamano
@@ -82,6 +88,7 @@ class AnalizadorSemantico:
         self.desplazamiento += tamano
         ambito['simbolos'][nombre] = simbolo
         self.simbolos.append(simbolo)
+        self.declarados[nombre] = simbolo
         self.registrar_uso(simbolo, nodo, 'declaracion')
         self.evento('insertar', nodo, nombre=nombre, tipo=tipo, direccion=simbolo['direccion'])
         return simbolo
@@ -91,6 +98,15 @@ class AnalizadorSemantico:
         if origen == destino:
             return True
         if origen == 'int' and destino == 'float':
+            if nodo.get('constante'):
+                try:
+                    valor = float(nodo['valor_constante'])
+                    if not math.isfinite(valor):
+                        raise OverflowError()
+                    nodo['valor_constante'] = valor
+                except OverflowError:
+                    self.error(nodo, 'CONSTANTE_INVALIDA', 'Conversión constante fuera de rango.')
+                    return False
             nodo['conversion'] = {'de': origen, 'a': destino}
             nodo['tipo_efectivo'] = destino
             self.evento('convertir', nodo, origen=origen, destino=destino)
@@ -102,11 +118,46 @@ class AnalizadorSemantico:
         if 'error' in (tipo_destino, tipo_expr):
             nodo['tipo'] = 'error'
         elif not self.convertir(expresion, tipo_destino):
-            self.error(nodo, 'CONVERSION_INVALIDA',
-                       f"No se puede asignar {tipo_expr} a '{destino['value']}' de tipo {tipo_destino}.")
+            if expresion.get('tipo') == 'error':
+                nodo['tipo'] = 'error'
+            else:
+                self.error(nodo, 'CONVERSION_INVALIDA',
+                           f"No se puede asignar {tipo_expr} a '{destino['value']}' de tipo {tipo_destino}.")
         else:
             nodo['tipo'] = tipo_destino
+            self.copiar_valor(expresion, nodo)
+            self.copiar_valor(expresion, destino)
             self.evento('asignar', nodo, destino=destino['value'], tipo=tipo_destino)
+        if destino.get('simbolo_id'):
+            simbolo = self.simbolos[destino['simbolo_id'] - 1]
+            self.copiar_valor(nodo if nodo.get('tipo') != 'error' else {}, simbolo)
+
+    @staticmethod
+    def copiar_valor(origen, destino):
+        destino['constante'] = origen.get('constante', False)
+        if destino['constante']:
+            destino['valor_constante'] = origen['valor_constante']
+        else:
+            destino.pop('valor_constante', None)
+
+    def estado(self):
+        return {s['id']: {k: s[k] for k in ('constante', 'valor_constante') if k in s}
+                for s in self.simbolos}
+
+    def restaurar(self, estado):
+        for s in self.simbolos:
+            self.copiar_valor(estado.get(s['id'], {}), s)
+
+    def invalidar_escrituras(self, nodo):
+        # Un ciclo puede ejecutar cero o varias veces: no usar valores de una iteración.
+        if nodo['clase'] in ('asignacion', 'postfijo', 'cin'):
+            nombre = nodo['children'][0]['value']
+            for ambito in reversed(self.ambitos):
+                if nombre in ambito['simbolos']:
+                    self.copiar_valor({}, ambito['simbolos'][nombre])
+                    break
+        for hijo in nodo.get('children', []):
+            self.invalidar_escrituras(hijo)
 
     def condicion(self, nodo):
         self.visitar(nodo)
@@ -153,7 +204,9 @@ class AnalizadorSemantico:
                 var['valido'] = var.get('tipo') != 'error' and all(
                     expr.get('valido', True) for expr in var.get('children', []))
         elif clase == 'identificador':
-            self.buscar(nodo)
+            simbolo = self.buscar(nodo)
+            if simbolo:
+                self.copiar_valor(simbolo, nodo)
         elif clase == 'literal':
             tipo = {'NUMERO_ENTERO': 'int', 'NUMERO_REAL': 'float', 'BOOLEANO': 'bool'}[nodo['tipo_token']]
             valor = (nodo['value'] == 'true') if tipo == 'bool' else (
@@ -177,26 +230,49 @@ class AnalizadorSemantico:
             if nodo['tipo'] not in NUMERICOS | {'error'}:
                 self.error(nodo, 'OPERADOR_INVALIDO',
                            f"El operador {nodo['operador']} requiere int o float.")
+            elif hijos[0].get('constante') and nodo['tipo'] != 'error':
+                nodo.update(constante=True, valor_constante=hijos[0]['valor_constante'] +
+                            (1 if nodo['operador'] == '++' else -1))
+                self.copiar_valor(nodo, self.simbolos[hijos[0]['simbolo_id'] - 1])
         elif clase == 'cin':
             simbolo = self.buscar(hijos[0], 'entrada')
+            if simbolo:
+                self.copiar_valor({}, simbolo)
             hijos[0]['constante'] = False
             hijos[0]['valido'] = simbolo is not None
             nodo['tipo'] = 'void' if simbolo else 'error'
         elif clase == 'cout':
             self.visitar(hijos[0])
             nodo['tipo'] = 'void' if hijos[0]['tipo'] != 'error' else 'error'
-        elif clase in ('if', 'while'):
+        elif clase == 'if':
             self.condicion(hijos[0])
-            for cuerpo in hijos[1:]:
-                self.visitar(cuerpo)
+            antes = self.estado()
+            self.visitar(hijos[1])
+            entonces = self.estado()
+            self.restaurar(antes)
+            if len(hijos) > 2:
+                self.visitar(hijos[2])
+            otro = self.estado()
+            if hijos[0].get('constante') and hijos[0]['tipo'] == 'bool':
+                self.restaurar(entonces if hijos[0]['valor_constante'] else otro)
+            else:
+                self.restaurar({i: v if v == otro.get(i) else {} for i, v in entonces.items()})
+            nodo['tipo'] = 'void'
+        elif clase == 'while':
+            self.invalidar_escrituras(hijos[1])
+            self.condicion(hijos[0])
+            self.visitar(hijos[1])
+            self.invalidar_escrituras(hijos[1])
             nodo['tipo'] = 'void'
         elif clase == 'do_until':
             # La condición pertenece al mismo ámbito que el cuerpo del do.
             cuerpo, cond = hijos
+            self.invalidar_escrituras(cuerpo)
             cuerpo.update(constante=False, tipo='void')
             self.entrar('do', cuerpo)
             for hijo in cuerpo['children']:
                 self.visitar(hijo)
+            self.invalidar_escrituras(cuerpo)
             self.condicion(cond)
             cuerpo['valido'] = all(h.get('valido', True) for h in cuerpo['children'])
             self.evento('salir_ambito', cuerpo, ambito=self.ambitos[-1]['nombre'])
@@ -221,6 +297,8 @@ class AnalizadorSemantico:
             nodo['tipo'] = 'error'
             return
         numericos = all(t in NUMERICOS for t in tipos)
+        potencia_real = (op == '^' and (not hijos[1].get('constante')
+                          or hijos[1]['valor_constante'] < 0))
         if nodo['clase'] == 'unario':
             valido = tipos[0] == 'bool' if op == '!' else numericos
             resultado = 'bool' if op == '!' else tipos[0]
@@ -234,22 +312,25 @@ class AnalizadorSemantico:
             valido, resultado = tipos == ['int', 'int'], 'int'
         else:
             valido = numericos
-            resultado = 'float' if 'float' in tipos or op == '^' else 'int'
+            resultado = 'float' if 'float' in tipos or potencia_real else 'int'
         if not valido:
             self.error(nodo, 'OPERADOR_INVALIDO',
                        f"Operador '{op}' incompatible con los tipos {' y '.join(tipos)}.")
             return
         nodo['tipo'] = resultado
         # Comparaciones numéricas también aplican promoción aunque produzcan bool.
-        if numericos and ('float' in tipos or op == '^'):
+        if numericos and ('float' in tipos or potencia_real):
             for hijo in hijos:
                 self.convertir(hijo, 'float')
+        if any(h.get('tipo') == 'error' for h in hijos):
+            nodo['tipo'] = 'error'
+            return
         if op in ('/', '%') and hijos[1].get('constante') and hijos[1]['valor_constante'] == 0:
             self.error(nodo, 'DIVISION_CERO', 'División o módulo por cero en una expresión constante.')
             return
         if all(h.get('constante', False) for h in hijos):
             valores = [h['valor_constante'] for h in hijos]
-            if numericos and ('float' in tipos or op == '^'):
+            if numericos and ('float' in tipos or potencia_real):
                 try:
                     valores = [float(v) for v in valores]
                 except OverflowError:

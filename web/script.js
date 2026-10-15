@@ -119,7 +119,7 @@ function actualizarEditor() {
     const archivo = archivosAbiertos.find(a => a.id === idActivo);
     const texto = editor.value;
 
-    highlightingContent.innerHTML = resaltarCodigo(texto);
+    highlightingContent.innerHTML = resaltarCodigo(texto) + '\n';
 
     const pos = editor.selectionStart;
     const lineasSub = texto.substring(0, pos).split(/\r?\n/);
@@ -140,7 +140,7 @@ function actualizarEditor() {
     }
     lineNumbers.innerHTML = numerosHtml;
 
-    const columnaActual = lineasSub[filaActual - 1].length;
+    const columnaActual = lineasSub[filaActual - 1].length + 1;
     document.getElementById('posicion-cursor').innerText =
         `Archivo: ${archivo ? archivo.nombre : 'Sin título'} | Línea: ${filaActual} | Columna: ${columnaActual}`;
 
@@ -162,7 +162,7 @@ function resaltarCodigo(codigo) {
         }
         if (groups.simbolo || groups.espacio) return safe;
         return `<span class="token-error">${safe}</span>`;
-    }).replace(/\r\n|\r|\n/g, '<br>');
+    }).replace(/\r\n|\r/g, '\n');
 }
 
 function sincronizarScroll() {
@@ -381,19 +381,23 @@ document.addEventListener('DOMContentLoaded', function () {
 function generarTablaSimbolos(simbolos) {
     if (!simbolos.length) return '<p>No hay símbolos registrados.</p>';
     return '<table class="tabla-tokens"><thead><tr>' +
-        ['ID', 'Nombre', 'Tipo', 'Ámbito', 'Líneas', 'Desplazamiento', 'Bytes'].map(
+        ['ID', 'Nombre', 'Tipo', 'Ámbito', 'Valor', 'Líneas', 'Desplazamiento', 'Bytes'].map(
             titulo => '<th>' + titulo + '</th>').join('') + '</tr></thead><tbody>' +
         simbolos.map(s => '<tr>' + [
-            s.id, s.nombre, s.tipo, s.ambito, s.lineas.join(', '), s.direccion, s.tamano
+            s.id, s.nombre, s.tipo, s.ambito, s.constante ? formatearValor(s.valor_constante, s.tipo) : 'no determinado', s.lineas.join(', '), s.direccion, s.tamano
         ].map(valor => '<td>' + escaparHtml(valor) + '</td>').join('') + '</tr>').join('') +
         '</tbody></table>';
+}
+
+function formatearValor(valor, tipo) {
+    return tipo === 'float' && Number.isInteger(valor) ? valor.toFixed(1) : JSON.stringify(valor);
 }
 
 function anotacionesSemanticas(nodo) {
     const atributos = [];
     if (nodo.dtype) atributos.push('dtype heredado: ' + nodo.dtype);
-    if (nodo.tipo) atributos.push('tipo: ' + nodo.tipo);
-    if (nodo.constante) atributos.push('valor: ' + JSON.stringify(nodo.valor_constante));
+    if (nodo.tipo) atributos.push('tipo: ' + (nodo.tipo_efectivo || nodo.tipo));
+    if (nodo.constante) atributos.push('valor: ' + formatearValor(nodo.valor_constante, nodo.tipo_efectivo || nodo.tipo));
     else if (nodo.tipo && nodo.tipo !== 'void') atributos.push('valor: no determinado');
     if (nodo.conversion) atributos.push('conversión: ' + nodo.conversion.de + ' → ' + nodo.conversion.a);
     if (nodo.tipo_esperado) atributos.push('tipo esperado: ' + nodo.tipo_esperado);

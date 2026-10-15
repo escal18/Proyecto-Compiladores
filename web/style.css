@@ -672,3 +672,15 @@ button[onclick="guardarComo()"] svg {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
+
+/* La capa de color y el textarea deben tener las mismas métricas de texto. */
+#editor, #highlighting-content {
+    font-weight: normal;
+    font-style: normal;
+    font-variant-ligatures: none;
+    letter-spacing: normal;
+    overflow-wrap: normal;
+}
+#highlighting-content span { line-height: inherit; font-weight: inherit; font-style: inherit; }
+.line-numbers { flex: 0 0 50px; min-height: 0; }
+.editor-content { min-height: 0; }

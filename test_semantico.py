@@ -67,7 +67,7 @@ class SemanticoTests(unittest.TestCase):
         self.assertEqual(res['errores_semanticos'], [])
         nodos = list(recorrer(res['arbol_anotado']))
         for n in nodos:
-            if n['clase'] == 'identificador':
+            if n['clase'] == 'identificador' and n['name'] != 'Destino':
                 self.assertFalse(n['constante'])
                 self.assertNotIn('valor_constante', n)
         expr = next(n for n in nodos if n.get('operador') == '+')
@@ -82,13 +82,91 @@ class SemanticoTests(unittest.TestCase):
         self.assertEqual(len(res['tabla_simbolos']), 1)
         self.assertEqual(res['tabla_simbolos'][0]['tipo'], 'int')
 
-    def test_ambitos_sombreado_y_salida_de_bloque(self):
+    def test_duplicados_globales_y_salida_de_bloque(self):
         res = semantica('main { int x; if true then float x; x=1.5; int local; end x=1; local=2; }')
-        self.assertEqual([e['codigo'] for e in res['errores_semanticos']], ['NO_DECLARADO'])
+        self.assertEqual([e['codigo'] for e in res['errores_semanticos']],
+                         ['DUPLICADO', 'CONVERSION_INVALIDA', 'NO_DECLARADO'])
         x = [s for s in res['tabla_simbolos'] if s['nombre'] == 'x']
-        self.assertEqual(len(x), 2)
-        self.assertNotEqual(x[0]['ambito'], x[1]['ambito'])
-        self.assertEqual(x[0]['usos'][-1]['rol'], 'escritura')
+        self.assertEqual(len(x), 1)
+        self.assertEqual(x[0]['tipo'], 'int')
+        self.assertEqual(x[0]['valor_constante'], 1)
+
+    def test_nombre_unico_incluso_en_bloques_separados(self):
+        casos = [
+            'int x; { float x; }',
+            '{ int x; } { float x; }',
+            '{ int x; } float x;',
+            'if true then int x; else float x; end',
+            'while false int x; end do float x; until true',
+        ]
+        for codigo in casos:
+            with self.subTest(codigo=codigo):
+                res = semantica('main {\n' + codigo.replace('float', '\nfloat') + '\n}')
+                self.assertEqual([e['codigo'] for e in res['errores_semanticos']], ['DUPLICADO'])
+                self.assertEqual(res['errores_semanticos'][0]['linea'], 3)
+                self.assertIn('línea 2', res['errores_semanticos'][0]['desc'])
+                self.assertEqual(len(res['tabla_simbolos']), 1)
+                self.assertEqual(res['tabla_simbolos'][0]['tipo'], 'int')
+
+    def test_inicializador_duplicado_no_modifica_original(self):
+        res = semantica('main { int x=2; { float x=9.5; } int y=x; }')
+        self.assertEqual([e['codigo'] for e in res['errores_semanticos']], ['DUPLICADO'])
+        self.assertEqual([s['valor_constante'] for s in res['tabla_simbolos']], [2, 2])
+
+    def test_valores_suben_a_asignacion_y_se_reutilizan(self):
+        res = semantica('main { int x=2,y; x=x+3; y=x*2; y++; float z; z=y; }')
+        self.assertEqual(res['errores_semanticos'], [])
+        self.assertEqual([s['valor_constante'] for s in res['tabla_simbolos']], [5, 11, 11.0])
+        asignaciones = [n for n in recorrer(res['arbol_anotado']) if n['clase'] == 'asignacion']
+        self.assertEqual([n['valor_constante'] for n in asignaciones], [5, 10, 11.0])
+        self.assertIsInstance(asignaciones[-1]['valor_constante'], float)
+        self.assertEqual(asignaciones[0]['children'][1]['children'][0]['valor_constante'], 2)
+
+    def test_potencia_entera_y_promocion_local(self):
+        res = semantica('main { int x; x=2^3; float y; y=x+0.5; }')
+        self.assertEqual(res['errores_semanticos'], [])
+        self.assertEqual(res['tabla_simbolos'][0]['valor_constante'], 8)
+        potencia = next(n for n in recorrer(res['arbol_anotado']) if n.get('operador') == '^')
+        self.assertEqual(potencia['tipo'], 'int')
+        self.assertTrue(all('conversion' not in h for h in potencia['children']))
+        self.assertEqual(res['tabla_simbolos'][0]['tipo'], 'int')
+
+    def test_flujo_no_inventa_valores_entre_ramas_y_ciclos(self):
+        casos = [
+            ('bool b; cin >> b; int x=1; if b then x=2; else x=3; end', None),
+            ('bool b; cin >> b; int x=1; if b then x=2; else x=2; end', 2),
+            ('int x=1; if false then x=9; end', 1),
+            ('int x=1; if true then x=9; else x=3; end', 9),
+            ('int x=1; while x<3 x=x+1; end', None),
+            ('int x=1; do x=x+1; until x>3', None),
+            ('int x=1; x=true;', None),
+        ]
+        for fuente, esperado in casos:
+            with self.subTest(fuente=fuente):
+                res = semantica('main { ' + fuente + ' }')
+                x = next(s for s in res['tabla_simbolos'] if s['nombre'] == 'x')
+                self.assertEqual(x.get('valor_constante'), esperado)
+
+    def test_duplicado_en_lista_conserva_linea_y_simbolo(self):
+        res = semantica('main {\n int x,\n x;\n x=4;\n}')
+        self.assertEqual([(e['codigo'], e['linea']) for e in res['errores_semanticos']], [('DUPLICADO', 3)])
+        self.assertEqual(len(res['tabla_simbolos']), 1)
+        self.assertEqual(res['tabla_simbolos'][0]['valor_constante'], 4)
+
+    def test_punto_y_coma_faltante_se_ubica_en_sentencia_anterior(self):
+        for salto in ('\n', '\r\n', '\r'):
+            _, lexicos, errores = analizar(salto.join(['main {', 'int x', 'x=2', 'cout << x;', '}']))
+            self.assertEqual(lexicos, [])
+            self.assertEqual([e['linea'] for e in errores], [2, 3])
+            self.assertEqual([e['columna'] for e in errores], [6, 4])
+
+    def test_error_fin_archivo_incluye_comentarios_y_lineas_vacias(self):
+        import lexer
+        from parser_sintactico import Parser
+        fuente = 'main {\n int x;\n // falta cierre\n\n'
+        tokens, _ = lexer.analizar(fuente)
+        _, errores = Parser(tokens, fuente).parse()
+        self.assertEqual([(e['linea'], e['columna']) for e in errores], [(5, 1)])
 
     def test_do_condicion_comparte_ambito(self):
         res = semantica('main { do int x; x=1; until x==1 x=2; }')

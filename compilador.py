@@ -26,7 +26,7 @@ def main():
         elif fase in ("sintactico", "semantico"):
             tokens, errores_lexicos = lexer.analizar(codigo)
             
-            parser = parser_sintactico.Parser(tokens)
+            parser = parser_sintactico.Parser(tokens, codigo)
             arbol, errores_sintacticos = parser.parse()
             
             respuesta["resultado"] = arbol

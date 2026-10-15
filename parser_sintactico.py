@@ -4,9 +4,13 @@
 class Parser:
     LIMITES = {'}', 'end', 'else', 'until'}
 
-    def __init__(self, tokens):
+    def __init__(self, tokens, codigo=None):
         ignorados = {'ESPACIO', 'NUEVA_LINEA', 'COMENTARIO_LINEA', 'COMENTARIO_MULT'}
         self.tokens = [t for t in tokens if t['tipo'] not in ignorados]
+        self.fin = None
+        if codigo is not None:
+            lineas = codigo.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+            self.fin = (len(lineas), len(lineas[-1]) + 1)
         self.pos = 0
         self.errores = []
 
@@ -30,12 +34,20 @@ class Parser:
         ultimo = self.tokens[-1] if self.tokens else None
         linea = tk['linea'] if tk else (ultimo['linea'] if ultimo else 1)
         columna = tk['columna'] if tk else (ultimo['columna'] + len(ultimo['valor']) if ultimo else 1)
+        if tk is None and self.fin is not None:
+            linea, columna = self.fin
         self.errores.append({'linea': linea, 'columna': columna, 'fase': 'sintactico', 'desc': desc})
 
     def exigir(self, tipo, valor=None, desc=None):
         tk = self.consume(tipo, valor)
         if not tk:
-            self.reportar_error(desc or f"Se esperaba '{valor or tipo}'")
+            if valor == ';' and self.pos:
+                anterior = self.tokens[self.pos - 1]
+                self.errores.append({'linea': anterior['linea'],
+                    'columna': anterior['columna'] + len(anterior['valor']),
+                    'fase': 'sintactico', 'desc': desc or "Se esperaba ';'"})
+            else:
+                self.reportar_error(desc or f"Se esperaba '{valor or tipo}'")
         return tk
 
     def nodo(self, name, clase, token=None, children=None, **atributos):
